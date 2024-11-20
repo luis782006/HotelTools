@@ -1,0 +1,26 @@
+﻿@page "/"
+
+@* @using HotelTools.Models *@
+@* @inject Hotel_InventoryContext db *@
+@inject IConfiguration _configuration
+
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+
+@code{
+    string? conexion = "";
+    //List<Categoria> categorias = new ();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        //conexion = _configuration.GetValue<string>("Hotel_Inventory");
+        //categorias =db.Categorias.ToList();
+        //Console.WriteLine(categorias.Count());
+    }   
+}
