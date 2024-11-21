@@ -1,26 +1,45 @@
 ﻿@page "/"
 
-@* @using HotelTools.Models *@
-@* @inject Hotel_InventoryContext db *@
-@inject IConfiguration _configuration
+@inject IJSRuntime js
+@inject NavigationManager nav
+<AuthorizeView>
+    <Authorized>
+        <h1>Hello, world!</h1>
+    </Authorized>
+    <NotAuthorized>
+        <p>Hola usuario</p>
+    </NotAuthorized>
+</AuthorizeView>
+    
 
-
-<PageTitle>Home</PageTitle>
-
-<h1>Hello, world!</h1>
 
 Welcome to your new app.
 
+<AuthorizeView Roles="Admin,User">
+    <Authorized>
+        <br/>
+        <br/>
+        <button class="btn btn-primary" @onclick="MostrarSaludos">Saber el Role</button>
+        <br />
+        <br />
+        <button class="btn btn-primary" @onclick="MostrarCounter">Counter</button>
+    </Authorized>
+   
+</AuthorizeView>
 
 @code{
-    string? conexion = "";
-    //List<Categoria> categorias = new ();
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationTask { get; set; }
 
 
-    protected override async Task OnInitializedAsync()
+    private async Task MostrarSaludos()
     {
-        //conexion = _configuration.GetValue<string>("Hotel_Inventory");
-        //categorias =db.Categorias.ToList();
-        //Console.WriteLine(categorias.Count());
-    }   
+        var authState = await AuthenticationTask;
+        string message = $"Hola {authState.User.Identity.Name}";
+        await js.InvokeVoidAsync("alert", message);   
+    }
+    private async Task MostrarCounter()
+    {
+       nav.NavigateTo("/counter");
+    }
 }
