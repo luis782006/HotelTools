@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager nav
+@inject AuthenticationStateProvider authentication;
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudDialogProvider />
@@ -7,7 +9,20 @@
 <MudLayout>
     <MudAppBar Elevation="1">
         <MudText Typo="Typo.h5" Class="ml-3">Hotel Tools</MudText>
-
+        <MudPaper Class="ms-5">
+            <AuthorizeView>
+                <Authorized>
+                    <div>        
+                        <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.Logout" @onclick="Logout">Logout</MudIconButton>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <div>
+                        <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.Login" @onclick="LogIn">Login</MudIconButton>
+                    </div>
+                </NotAuthorized>
+            </AuthorizeView>
+        </MudPaper>
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen" Elevation="1">
@@ -52,6 +67,16 @@
     {
         _theme = CreateTheme();
     }
+    private async void Logout()
+    {
+        var authStateProvider = (EstadoAuthProveedor)authentication;
+        await authStateProvider.UpdateAuthenticationState(null);
+        nav.NavigateTo("/", true);
+    }
 
+    private void LogIn()
+    {
+        nav.NavigateTo("/login", true);
+    }
 
 }

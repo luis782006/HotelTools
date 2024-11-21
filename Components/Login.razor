@@ -1,0 +1,61 @@
+﻿@page "/login"
+@using HotelTools.Autenticacion;
+@using Microsoft.AspNetCore.Components.Authorization
+@inject ServicioCuentaUsuario servicioCuentaUsuario;
+@inject IJSRuntime js
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager nav;
+@using System.ComponentModel.DataAnnotations
+
+<MudPaper Style="display:flex; justify-content:center">
+    <EditForm Model="@model" OnValidSubmit="Autenticar" style="width:40%; padding:2rem;">
+    <DataAnnotationsValidator />
+    <MudGrid style="display:flex; justify-content:center; ">
+        <MudItem xs="12" sm="7">
+            <MudCard>
+                <MudCardContent>
+                    <MudText>Login</MudText>
+                    <MudTextField Label="First name"
+                                  @bind-Value="model.NombreUsuario"  />                    
+                    <MudTextField Label="Password"  Class="mt-3"
+                                  @bind-Value="model.Password"  InputType="InputType.Password" />                   
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success" Class="ml-auto">Aceptar</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>              
+    </MudGrid>
+</EditForm>
+</MudPaper>
+
+
+@code {
+    CuentaUsuario model = new();
+    bool success;
+
+    private void OnValidSubmit(EditContext context)
+    {
+        success = true;
+        StateHasChanged();
+    }
+
+    private async Task Autenticar()
+    {
+        var cuentaUsuario=servicioCuentaUsuario.GetByUsername(model.NombreUsuario);
+        if (cuentaUsuario == null || cuentaUsuario.Password != model.Password)
+        {
+
+            await js.InvokeVoidAsync("alert", "El usuario o contraseña son incorrectos.");
+            return;
+        }
+        var EstadoAutenticado = (EstadoAuthProveedor)authStateProvider;
+        await EstadoAutenticado.UpdateAuthenticationState(new SessionUsuario
+        {
+            NombreUsuario = cuentaUsuario.NombreUsuario,
+            Role = cuentaUsuario.Role
+        });
+        nav.NavigateTo("/", true);
+    }
+
+}

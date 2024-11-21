@@ -1,4 +1,8 @@
+using HotelTools.Autenticacion;
 using HotelTools.Components;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+
 //using HotelTools.Models;
 
 //using HotelTools.Models;
@@ -22,31 +26,30 @@ var configuration = new ConfigurationBuilder()
     .Build();
 builder.Services.AddSingleton(configuration);
 
-//Agrego servicio de cadena de conexion
-//builder.Services.AddDbContext<Hotel_ToolsContext>(options =>
-  // options.UseSqlServer(builder.Configuration.GetConnectionString("Hotel_Tools")));
-
-//Agregar Servicio de Autenticación y Autorización
-//builder.Services.AddIdentity<Empleado,Rol>()
-  //  .AddDefaultTokenProviders()
-  //  .AddEntityFrameworkStores<Hotel_ToolsContext>();
-
-//Configura Cookie Authentication
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Cookie.HttpOnly = true;
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
-    options.LoginPath = "/Account/Login";
-    options.AccessDeniedPath = "/Account/AccessDenied";
-    options.SlidingExpiration = true;
-});
-
-//Politicas a
+builder.Services.AddAuthorization();
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie("Cookies", options =>
+    {
+        options.LoginPath = "/login"; // Ruta a tu página de inicio de sesión
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(20);        
+        options.AccessDeniedPath = "/noexiste";
+        options.SlidingExpiration = true;
+    });
+builder.Services.AddAuthenticationCore();
+builder.Services.AddScoped<ProtectedSessionStorage>();
+builder.Services.AddScoped<AuthenticationStateProvider,EstadoAuthProveedor>();
+// Test Servicio de cuentas de usuarios Hardcodeada
+builder.Services.AddSingleton<ServicioCuentaUsuario>();
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("RequireEmpleadoRole", policy => policy.RequireRole("Empleado"));
+    options.AddPolicy("RequireEmpleadoRole", policy => policy.RequireRole("User"));
+
 });
+
+
+builder.Services.AddCascadingAuthenticationState();
+
 
 
 builder.Services.AddRazorComponents();
@@ -70,8 +73,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-//app.UseAuthentication();
-//app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
