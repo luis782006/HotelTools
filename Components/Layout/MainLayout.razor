@@ -1,28 +1,38 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager nav
 @inject AuthenticationStateProvider authentication;
+@using System.Security.Claims;
+@using HotelTools.Components.Pages
+@inject IJSRuntime js;
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudText Typo="Typo.h5" Class="ml-3">Hotel Tools</MudText>
-        <MudPaper Class="ms-5">
-            <AuthorizeView>
-                <Authorized>
-                    <div>        
-                        <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.Logout" @onclick="Logout">Logout</MudIconButton>
-                    </div>
-                </Authorized>
-                <NotAuthorized>
-                    <div>
-                        <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.Login" @onclick="LogIn">Login</MudIconButton>
-                    </div>
-                </NotAuthorized>
-            </AuthorizeView>
-        </MudPaper>
+    <MudAppBar Elevation="1" >
+       
+              
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+                <MudText Typo="Typo.h5" Class="ml-3">Hotel Tools</MudText>       
+
+               
+                <div >
+                <AuthorizeView>
+                    <Authorized>
+                        <div>
+                            <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.Logout" @onclick="Logout">Logout</MudIconButton>
+                        </div>
+                    </Authorized>
+                    <NotAuthorized>
+                        <div>
+                            <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.Login" @onclick="LogIn">Login</MudIconButton>
+                        </div>
+                    </NotAuthorized>
+                </AuthorizeView>
+                </div>
+      
+        
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen" Elevation="1">
@@ -31,7 +41,9 @@
 
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-            @Body
+            
+                @Body
+           
         </MudContainer>
     </MudMainContent>
 </MudLayout>
@@ -47,6 +59,13 @@
     private bool _isDarkMode = true;
     MudTheme _theme = new MudTheme();
 
+    bool hasSession=false;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
     private MudTheme CreateTheme()
     {
         return new MudTheme
@@ -54,10 +73,9 @@
 
                 PaletteDark = new PaletteDark
                 {
-                    Primary = Colors.Blue.Lighten5,
-                    Secondary = Colors.Blue.Lighten4,
+                    //Primary = Colors.Blue.Lighten5,
+                    //Secondary = Colors.Blue.Lighten,
                     AppbarBackground = Colors.Blue.Lighten1
-
                 }
             };
 
@@ -78,5 +96,7 @@
     {
         nav.NavigateTo("/login", true);
     }
+
+    
 
 }

@@ -1,14 +1,19 @@
 ﻿@page "/counter"
-@attribute [Authorize(Roles = "Admin")]
 
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <PageTitle>Counter</PageTitle>
 
-<PageTitle>Counter</PageTitle>
+        <h1>Counter</h1>
 
-<h1>Counter</h1>
-
-<p role="status">Current count: @currentCount</p>
-
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+        <p role="status">Current count: @currentCount</p>
+    <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+    </Authorized>
+    <NotAuthorized>
+        <AccesoDenegado />
+    </NotAuthorized>
+</AuthorizeView>
+    
 
 @code {
     private int currentCount = 0;
