@@ -10,30 +10,29 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1" >
-       
-              
-                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-                <MudText Typo="Typo.h5" Class="ml-3">Hotel Tools</MudText>       
-
-               
-                <div >
-                <AuthorizeView>
-                    <Authorized>
-                        <div>
-                            <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.Logout" @onclick="Logout">Logout</MudIconButton>
-                        </div>
-                    </Authorized>
-                    <NotAuthorized>
-                        <div>
-                            <MudIconButton Color="Color.Default" Icon="@Icons.Material.Filled.Login" @onclick="LogIn">Login</MudIconButton>
-                        </div>
-                    </NotAuthorized>
-                </AuthorizeView>
-                </div>
-      
+    <MudAppBar Elevation="1" Fixed="true">
+   
         
-    </MudAppBar>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudText Typo="Typo.h5" Class="ml-3">Hotel Tools</MudText>
+
+        <MudSpacer />
+            <AuthorizeView>
+                <Authorized>
+                    <div>
+                        <MudIconButton style="color:white;" Icon="@Icons.Material.Filled.Logout" @onclick="Logout" />
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <div>
+                    <MudIconButton style="color:white;" Icon="@Icons.Material.Filled.Login" @onclick="LogIn" />
+                    </div>
+                </NotAuthorized>
+            </AuthorizeView>
+       
+    
+     </MudAppBar>
+
 
     <MudDrawer @bind-Open="_drawerOpen" Elevation="1">
         <NavMenu />
