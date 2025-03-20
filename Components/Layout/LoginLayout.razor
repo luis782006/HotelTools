@@ -1,0 +1,63 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager nav
+@inject AuthenticationStateProvider authentication;
+@using System.Security.Claims;
+@using HotelTools.Components.Pages
+@inject IJSRuntime js;
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudLayout>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4">
+
+            @Body
+
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode = true;
+    MudTheme _theme = new MudTheme();
+
+    bool hasSession=false;
+
+    
+    private MudTheme CreateTheme()
+    {
+        return new MudTheme
+            {
+
+                PaletteDark = new PaletteDark
+                {
+                    //Primary = Colors.Blue.Lighten5,
+                    //Secondary = Colors.Blue.Lighten,
+                    AppbarBackground = Colors.Blue.Lighten1
+                }
+            };
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _theme = CreateTheme();
+    }
+    private async void Logout()
+    {
+        var authStateProvider = (EstadoAuthProveedor)authentication;
+        await authStateProvider.UpdateAuthenticationState(null);
+        nav.NavigateTo("/", true);
+    }
+
+    private void LogIn()
+    {
+        nav.NavigateTo("/login", true);
+    }
+
+    
+
+}

@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,12 +21,30 @@ builder.Services.AddRazorComponents()
 //MudBlazor Services
 builder.Services.AddMudServices();
 
-//Agregar Servicio de Configuration
+// CONFIGURACION DE LECTURA DE VARIABLES DE ENTORNO
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile(
+        $"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json",
+        optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables()
     .Build();
 builder.Services.AddSingleton(configuration);
+
+// CONFIGURACION DE LOGS
+Directory.CreateDirectory("Logs"); // CREO LA CARPETA SINO EXISTE
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration) // Leer configuración desde appsettings.json
+    .Enrich.WithProperty("Application", "BlazorApp")
+    .Enrich.FromLogContext()
+    .WriteTo.File(
+        Path.Combine("Logs", "log-.txt"),
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level}] {Message}{NewLine}{Exception}"
+    )
+    .CreateLogger();
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication("Cookies")
@@ -38,6 +58,7 @@ builder.Services.AddAuthentication("Cookies")
 builder.Services.AddAuthenticationCore();
 builder.Services.AddScoped<ProtectedSessionStorage>();
 builder.Services.AddScoped<AuthenticationStateProvider,EstadoAuthProveedor>();
+
 // Test Servicio de cuentas de usuarios Hardcodeada
 builder.Services.AddSingleton<ServicioCuentaUsuario>();
 builder.Services.AddAuthorization(options =>
