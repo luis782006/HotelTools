@@ -1,5 +1,7 @@
 using HotelTools.Autenticacion;
 using HotelTools.Components;
+using HotelTools.Models;
+using HotelTools.Seguridad;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
@@ -46,18 +48,30 @@ Log.Logger = new LoggerConfiguration()
     )
     .CreateLogger();
 
+// Configurar el DbContext
+builder.Services.AddDbContext<HotelContext>((serviceProvider, options) =>
+{
+    var config = serviceProvider.GetRequiredService<IConfiguration>();
+    options.UseSqlServer(config.GetConnectionString("Hotel_Tools"));
+});
+
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+
+
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", options =>
     {
         options.LoginPath = "/login"; // Ruta a tu página de inicio de sesión
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(20);        
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);        
         options.AccessDeniedPath = "/noexiste";
         options.SlidingExpiration = true;
     });
+
 builder.Services.AddAuthenticationCore();
 builder.Services.AddScoped<ProtectedSessionStorage>();
-builder.Services.AddScoped<AuthenticationStateProvider,EstadoAuthProveedor>();
+//builder.Services.AddScoped<AuthenticationStateProvider,EstadoAuthProveedor>();
 
 // Test Servicio de cuentas de usuarios Hardcodeada
 builder.Services.AddSingleton<ServicioCuentaUsuario>();
@@ -70,8 +84,6 @@ builder.Services.AddAuthorization(options =>
 
 
 builder.Services.AddCascadingAuthenticationState();
-
-
 
 builder.Services.AddRazorComponents();
 builder.Services.AddServerSideBlazor()
