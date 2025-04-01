@@ -36,6 +36,7 @@ namespace HotelTools.Models
            modelBuilder.Entity<Empleado>(entity =>
            {
                entity.HasKey(c => c.ID_Empleado);
+               entity.Property(e => e.ID_Empleado).ValueGeneratedOnAdd(); // Autoincremental
                entity.ToTable("Empleados", "Empleados"); 
            });
 
