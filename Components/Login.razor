@@ -1,50 +1,98 @@
-@page "/login"
+@page "/"
 @layout LoginLayout 
 @using HotelTools.Autenticacion;
 @using HotelTools.Components.Layout
 @using Microsoft.AspNetCore.Components.Authorization
 @inject ServicioCuentaUsuario servicioCuentaUsuario;
 @inject IJSRuntime js
-@inject AuthenticationStateProvider authStateProvider
+@*@inject AuthenticationStateProvider authStateProvider*@
 @inject NavigationManager nav;
 @using System.ComponentModel.DataAnnotations
+@inject CustomAuthenticationStateProvider authStateProvider
 
-        <div class="d-flex justify-center">
-            <div class="img-logo">
-                <img src="img/logo.png" width="40%" /> 
-            </div>
+<style>
+    body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: url("img/fondo-hotel-cilene.webp") no-repeat center center;
+    background-size: cover;
+    }
+
+    .mud-container{
+        display: flex;        
+        justify-content: center;
+        align-items:flex-start;
+        
+    }
+
+    .formulario-login{
+        margin-top:0%;
+        width:50%;
+    }
+
+    .img-logo{
+        width:300px;
+        height:120px;
+    }
+
+    .formCentrado{
+        border-radius: 10px;
+        padding:10px;
+        width:300px;
+    }
+
+    .img-logo img{
+        border-radius: 50%;
+        background-color: white;
+        background: radial-gradient(circle, white 0%, rgba(255, 255, 255, 0) 70%);
+    }
+
+    .mud-card-header {
+        margin-top: 0%;
+        padding:5px;
+    }
+</style>
+
+<div class="formulario-login">
+    <div class="contenedor-logo"
+        <div class="img-logo">
+            <img src="img/logo.png" width="40%" />
         </div>
-<MudCard class ="formulario-login">
-    <MudCardHeader>
-        <CardHeaderContent>
-            <MudText Typo="Typo.h5" Align="Align.Center">Iniciar Sesión</MudText>
-        </CardHeaderContent>
-    </MudCardHeader>
-    <MudCardContent>
-        <MudTextField T="string" 
-                     Label="Usuario" 
-                     @bind-Value="model.NombreUsuario"
-                     Variant="Variant.Outlined"
-                     Class="mt-3"
-                     />        
-        <MudTextField T="string"
-                     Label="Contraseña"
-                     @bind-Value="model.Password"
-                     Variant="Variant.Outlined"
-                     InputType="InputType.Password"
-                     Class="mt-3"/>
-    </MudCardContent>
-    <MudCardActions Class="d-flex justify-center pa-2 ">
-        <MudButton OnClick="Autenticar"
-                  Class="mb-4"
-                  Variant="Variant.Filled"
-                  Color="Color.Info"
-                  Size="Size.Large"
-                  FullWidth="true">
-            Iniciar Sesión
-        </MudButton>
-    </MudCardActions>
-</MudCard>
+    </div>
+    <MudCard class="formCentrado">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5" Align="Align.Center">Iniciar Sesión</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTextField T="string"
+                          Label="Usuario"
+                          @bind-Value="model.NombreUsuario"
+                          Variant="Variant.Outlined"
+                          Class="mt-3" />
+            <MudTextField T="string"
+                          Label="Contraseña"
+                          @bind-Value="model.Password"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          Class="mt-3" />
+        </MudCardContent>
+        <MudCardActions Class="d-flex justify-center pa-2 ">
+            <MudButton OnClick="Autenticar"
+                       Class="mb-4"
+                       Variant="Variant.Filled"
+                       Color="Color.Info"
+                       Size="Size.Large"
+                       FullWidth="true">
+                Iniciar Sesión
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</div>
+
 
 
 @code {
@@ -52,21 +100,42 @@
 
     private async Task Autenticar()
     {
-        var cuentaUsuario = servicioCuentaUsuario.GetByUsername(model.NombreUsuario);
-        
+        try
+        {
+            var isAuthenticated = await authStateProvider.ValidateLoginAsync(model.NombreUsuario, model.Password);
+
+            if (isAuthenticated)
+            {
+                nav.NavigateTo("/dashboard", true);
+            }
+            else
+            {
+                nav.NavigateTo("/noexiste", true);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Manejar el error de manera apropiada, como mostrar un mensaje al usuario
+            Console.WriteLine(ex.Message);
+        }
+
+        //nav.NavigateTo("/dashboard", true);
+    }
+}
+
+
+     @*  var cuentaUsuario = servicioCuentaUsuario.GetByUsername(model.NombreUsuario);
+
         if (cuentaUsuario == null || cuentaUsuario.Password != model.Password)
         {
             await js.InvokeVoidAsync("alert", "El usuario o contraseña son incorrectos.");
             return;
         }
-        
+
         var sessionUsuario = new SessionUsuario
         {
             NombreUsuario = cuentaUsuario.NombreUsuario,
             Role = cuentaUsuario.Role
         };
 
-        await ((EstadoAuthProveedor)authStateProvider).UpdateAuthenticationState(sessionUsuario);
-        nav.NavigateTo("/", true);
-    }
-}
+        await ((EstadoAuthProveedor)authStateProvider).UpdateAuthenticationState(sessionUsuario); *@
