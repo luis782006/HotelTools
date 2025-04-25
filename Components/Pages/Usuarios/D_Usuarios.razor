@@ -30,6 +30,7 @@
                    FullWidth="true">
          Registrar
         </MudButton>
+      
     </MudCardActions>
 </MudCard>
 
@@ -40,7 +41,9 @@
     public void Registrar()
     {
         string? claveSecreta = _configuration["Util:ClaveSecreta"];
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(model.Password + claveSecreta, workFactor: 10);
+        Console.WriteLine(model.Password + claveSecreta);        
+        string pass = model.Password.Trim();
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(pass + claveSecreta, workFactor: 10);
 
         Empleado empleado = new Empleado
             {               
@@ -60,5 +63,5 @@
         _context.SaveChanges(); 
 
     }
-
+   
 }

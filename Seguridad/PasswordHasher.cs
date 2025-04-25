@@ -5,23 +5,18 @@ namespace HotelTools.Seguridad
 {
     public class PasswordHasher
     {
-        private static IConfiguration _config;
-
-        public PasswordHasher(IConfiguration configuration)
-        {
-            _config = configuration;
-        }
-
-        public static string HashPassword(string password)
+       
+        public static string HashPassword(string password, IConfiguration _config)
         {
            string claveSecreta = _config["Util:ClaveSecreta"];
             return BCrypt.Net.BCrypt.HashPassword(password + claveSecreta);
         }
 
-        public static bool VerifyPassword(string password, string hashedPassword)
-        {
-            string claveSecreta = _config["Util:ClaveSecreta"];
-            return BCrypt.Net.BCrypt.Verify(password + claveSecreta, hashedPassword);
+        public static bool VerifyPassword(string passwordLogin, string passwordUser, IConfiguration _config)
+        {            
+            string claveSecreta = _config["Util:ClaveSecreta"];                        
+            bool isValid = BCrypt.Net.BCrypt.Verify(passwordLogin+claveSecreta, passwordUser);
+            return isValid;
         }
     }
 }

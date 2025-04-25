@@ -56,7 +56,7 @@ builder.Services.AddDbContext<HotelContext>((serviceProvider, options) =>
 });
 
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider,CustomAuthenticationStateProvider>();
 
 
 builder.Services.AddAuthorization();

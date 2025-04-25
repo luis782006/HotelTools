@@ -21,8 +21,8 @@ namespace HotelTools.Models
         }
 
         public virtual DbSet<Empleado> Empleados { get; set; }
-        public virtual DbSet<Rol> Roles { get; set; }
-        public virtual DbSet<SesionActiva> SesionActiva { get; set; }
+        public virtual DbSet<Rol> Rol { get; set; }
+        public virtual DbSet<SesionActiva> SesionesActivas { get; set; }
         public virtual DbSet<Cargo> Cargo { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -30,6 +30,7 @@ namespace HotelTools.Models
             modelBuilder.Entity<Cargo>(entity =>
             {
                 entity.HasKey(c => c.ID_Cargo);
+                entity.Property(e => e.ID_Cargo).ValueGeneratedOnAdd(); // Autoincremental
                 entity.ToTable("Cargo", "Empleados");
             });
 
@@ -43,13 +44,15 @@ namespace HotelTools.Models
             modelBuilder.Entity<Rol>(entity =>
             {
                 entity.HasKey(c => c.ID_Rol);
+                entity.Property(e => e.ID_Rol).ValueGeneratedOnAdd(); // Autoincremental
                 entity.ToTable("Rol", "Empleados");
             });
 
             modelBuilder.Entity<SesionActiva>(entity =>
             {
-                entity.HasKey(c => c.TokenValue);
-                entity.ToTable("SesionActiva", "Empleados");
+                entity.HasKey(c => c.ID_SesionesActiva);
+                entity.Property(e => e.ID_SesionesActiva).ValueGeneratedOnAdd(); // Autoincremental
+                entity.ToTable("SesionesActivas", "Empleados");
             });
         }
     }

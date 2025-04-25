@@ -5,10 +5,9 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject ServicioCuentaUsuario servicioCuentaUsuario;
 @inject IJSRuntime js
-@*@inject AuthenticationStateProvider authStateProvider*@
 @inject NavigationManager nav;
 @using System.ComponentModel.DataAnnotations
-@inject CustomAuthenticationStateProvider authStateProvider
+@inject AuthenticationStateProvider authStateProvider
 
 <style>
     body {
@@ -102,7 +101,7 @@
     {
         try
         {
-            var isAuthenticated = await authStateProvider.ValidateLoginAsync(model.NombreUsuario, model.Password);
+            var isAuthenticated = await ((CustomAuthenticationStateProvider)authStateProvider).ValidateLoginAsync(model.NombreUsuario, model.Password);
 
             if (isAuthenticated)
             {
@@ -110,7 +109,7 @@
             }
             else
             {
-                nav.NavigateTo("/noexiste", true);
+                nav.NavigateTo("/accesoDenegado", true);
             }
         }
         catch (Exception ex)

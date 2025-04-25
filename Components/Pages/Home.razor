@@ -2,6 +2,9 @@
 
 @inject IJSRuntime js
 @inject NavigationManager nav
+@using Microsoft.AspNetCore.Components.Authorization
+
+
 <AuthorizeView>
     <Authorized>
         <h1>Hello, world!</h1>
@@ -29,15 +32,31 @@ Welcome to your new app.
 
 @code{
     [CascadingParameter]
-    private Task<AuthenticationState> AuthenticationTask { get; set; }
+    Task<AuthenticationState> AuthenticationTask { get; set; }
 
 
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationTask;
+        if (authState?.User?.Identity?.IsAuthenticated == true)
+        {
+            string message = $"Hola {authState.User.Identity.Name}";
+            Console.WriteLine(message); // Depuración
+        }
+        else
+        {
+            Console.WriteLine("User is not authenticated in OnInitializedAsync."); // Depuración
+        }
+    }
+
+  
     private async Task MostrarSaludos()
     {
         var authState = await AuthenticationTask;
-        string message = $"Hola {authState.User.Identity.Name}";
+        string message = $"Hola {authState.User.Identity.Name}";              
         await js.InvokeVoidAsync("alert", message);   
     }
+
     private async Task MostrarCounter()
     {
        nav.NavigateTo("/counter");
