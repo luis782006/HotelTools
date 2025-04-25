@@ -1,4 +1,4 @@
-﻿window.extras = {
+﻿window.extrasJS = {
     SetCookie: function (cname, cvalue) {
         var d = new Date();
         d.setTime(d.getTime() + (30 * 60 * 1000)); // 30 minutos en milisegundos

@@ -47,12 +47,14 @@ namespace HotelTools.Seguridad
                 var sessionId = Guid.NewGuid().ToString();
                 _authService.RegisterSession(decimal.Parse(userId), sessionId);
 
-                // Actualizar la cookie de sesión
+                // Para no olvidarme. Actualizar la cookie de sesión
                 _authService.UpdateSessionInDatabase(sessionId, "Activa");
 
-                // Aquí deberías implementar la lógica para actualizar la cookie en el navegador del cliente
-                _js.InvokeAsync<object>("extrasJS.SetCookie", CookieName, sessionId);
+                // Seteo la cookie en el navegador
+                await _js.InvokeAsync<object>("extrasJS.SetCookie", CookieName, sessionId);
+                
                 NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+                
                 return true;
             }
             else
@@ -81,7 +83,7 @@ namespace HotelTools.Seguridad
 
             // Eliminar la cookie en el navegador del cliente
             await _js.InvokeVoidAsync("extrasJS.DeleteCookie", CookieName);
-
+            
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
