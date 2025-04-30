@@ -116,9 +116,7 @@
         {
             // Manejar el error de manera apropiada, como mostrar un mensaje al usuario
             Console.WriteLine(ex.Message);
-        }
-
-        //nav.NavigateTo("/dashboard", true);
+        }        
     }
 }
 
@@ -137,4 +135,5 @@
             Role = cuentaUsuario.Role
         };
 
-        await ((EstadoAuthProveedor)authStateProvider).UpdateAuthenticationState(sessionUsuario); *@
+        await ((EstadoAuthProveedor)authStateProvider).UpdateAuthenticationState(sessionUsuario); 
+    *@
