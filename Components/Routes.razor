@@ -19,4 +19,24 @@
 </CascadingAuthenticationState>
 
 
-
+@code{
+    // [Inject]
+    // private IJSRuntime js { get; set; }
+    // [Inject]
+    // private NavigationManager nav { get; set; }
+    // [CascadingParameter]
+    // private Task<AuthenticationState> AuthenticationTask { get; set; }
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     var authState = await AuthenticationTask;
+    //     if (authState?.User?.Identity?.IsAuthenticated == true)
+    //     {
+    //         string message = $"Hola {authState.User.Identity.Name}";
+    //         Console.WriteLine(message); // Depuración
+    //     }
+    //     else
+    //     {
+    //         Console.WriteLine("User is not authenticated in OnInitializedAsync."); // Depuración
+    //     }
+    // }
+}

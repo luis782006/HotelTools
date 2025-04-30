@@ -37,7 +37,7 @@ namespace HotelTools.Seguridad
 
         public void RegisterSession(decimal userId, string sessionId)
         {
-            _context.SesionesActivas.Add(new SesionActiva { Token = sessionId, ID_Empleado = userId, FechaExpiracion = DateTime.Now.AddMinutes(30), EstadoSesion = "Actica" });
+            _context.SesionesActivas.Add(new SesionActiva { Token = sessionId, ID_Empleado = userId, FechaExpiracion = DateTime.Now.AddMinutes(30), EstadoSesion = "Activa" });
             _context.SaveChanges();
         }
 
@@ -56,6 +56,29 @@ namespace HotelTools.Seguridad
             }
             //Actualizo accion EF
             _context.SaveChanges();
+        }
+
+        public async Task<ClaimsPrincipal> ValidateSessionAsync(string sessionId)
+        {
+            // Check if session exists and is active in database
+            //var session = await GetSessionFromDatabase(sessionId);
+            var session= await _context.SesionesActivas.FirstOrDefaultAsync(s => s.Token == sessionId);
+            var user = await _context.Empleados.Where(user => user.ID_Empleado == session.ID_Empleado).FirstOrDefaultAsync();
+            var rol = await _context.Rol.Where(rol => rol.ID_Rol == session.ID_Empleado).FirstOrDefaultAsync();
+            if (session != null && session.EstadoSesion == "Activa")
+            {
+                
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, user.Nombre.Trim()),
+                    new Claim(ClaimTypes.Role, rol.NombreRol.Trim()),
+                    new Claim(ClaimTypes.NameIdentifier, user.ID_Empleado.ToString())
+                };
+                var claimsIdentity = new ClaimsIdentity(claims, "apiauth_type");
+
+                return claimsIdentity.IsAuthenticated ? new ClaimsPrincipal(claimsIdentity) : null;
+            }
+            return null;
         }
     }
 }

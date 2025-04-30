@@ -24,12 +24,15 @@ namespace HotelTools.Seguridad
         /// </summary>        
         public override Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var identity = new ClaimsIdentity();
-            if (_currentUser?.Identity != null && _currentUser.Identity.IsAuthenticated)
+            ClaimsPrincipal user = _currentUser;
+
+            if (_currentUser == null || !_currentUser.Identity?.IsAuthenticated == true)
             {
-                identity = _currentUser.Identity as ClaimsIdentity;
+                // Usuario no autenticado: devolvemos una identidad vacía
+                user = new ClaimsPrincipal(new ClaimsIdentity());
             }
-            return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(identity)));
+
+            return Task.FromResult(new AuthenticationState(user));
         }
 
         ///<sumary>
