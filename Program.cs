@@ -57,13 +57,17 @@ builder.Services.AddDbContext<HotelContext>((serviceProvider, options) =>
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider,CustomAuthenticationStateProvider>();
+builder.Services.AddHttpContextAccessor();
+
+
+
 
 
 builder.Services.AddAuthorization();
 builder.Services.AddAuthentication("Cookies")
     .AddCookie("Cookies", options =>
     {
-        options.LoginPath = "/login"; // Ruta a tu página de inicio de sesión
+        options.LoginPath = "/logins"; // Ruta a tu página de inicio de sesión
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);        
         options.AccessDeniedPath = "/noexiste";
         options.SlidingExpiration = true;
@@ -73,8 +77,7 @@ builder.Services.AddAuthenticationCore();
 builder.Services.AddScoped<ProtectedSessionStorage>();
 //builder.Services.AddScoped<AuthenticationStateProvider,EstadoAuthProveedor>();
 
-// Test Servicio de cuentas de usuarios Hardcodeada
-builder.Services.AddSingleton<ServicioCuentaUsuario>();
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
