@@ -3,7 +3,6 @@
 @using HotelTools.Autenticacion;
 @using HotelTools.Components.Layout
 @using Microsoft.AspNetCore.Components.Authorization
-@inject ServicioCuentaUsuario servicioCuentaUsuario;
 @inject IJSRuntime js
 @inject NavigationManager nav;
 @using System.ComponentModel.DataAnnotations
@@ -95,7 +94,7 @@
 
 
 @code {
-    CuentaUsuario model = new();
+    User model = new();
 
     private async Task Autenticar()
     {
