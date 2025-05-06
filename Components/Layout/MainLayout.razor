@@ -1,14 +1,33 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inherits LayoutComponentBase
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1">
+    <MudAppBar Elevation="1" Fixed="true">
+   
+        
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">Hotel Tools</MudText>
 
-    </MudAppBar>
+        <MudSpacer />
+           @*  <AuthorizeView>
+                <Authorized> *@
+                    <div>
+                        <MudIconButton style="color:white;" Icon="@Icons.Material.Filled.Logout" @onclick="Logout" />
+                    </div>
+               @*  </Authorized>
+                <NotAuthorized> *@
+                    <div>
+                    <MudIconButton style="color:white;" Icon="@Icons.Material.Filled.Login" @onclick="LogIn" />
+                    </div>
+              @*   </NotAuthorized>
+            </AuthorizeView> *@
+       
+    
+     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen" Elevation="1">
         <NavMenu />
@@ -32,6 +51,13 @@
     private bool _isDarkMode = true;
     MudTheme _theme = new MudTheme();
 
+    bool hasSession = false;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
     private MudTheme CreateTheme()
     {
         return new MudTheme
@@ -52,6 +78,14 @@
     {
         _theme = CreateTheme();
     }
+    private async void Logout()
+    {
+        
+    }
 
+    private void LogIn()
+    {
+       
+    }
 
 }
