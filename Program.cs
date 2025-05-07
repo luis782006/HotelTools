@@ -1,5 +1,5 @@
 using HotelTools.Components;
-//using HotelTools.Models;
+using HotelTools.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
@@ -31,7 +31,7 @@ builder.Services.AddSingleton(configuration);
 // CONFIGURACION DE LOGS
 Directory.CreateDirectory("Logs"); // CREO LA CARPETA SINO EXISTE
 
-//Ademas de los Paquetes Serilog y Serilog.Sinks.File, se necesita el paquete Serilog.Settings.Configuration
+//Además de los Paquetes Serilog y Serilog.Sinks.File, se necesita el paquete Serilog.Settings.Configuration
 //dotnet add package Serilog.Settings.Configuration. 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration) // Leer configuración desde appsettings.json
@@ -47,8 +47,10 @@ Log.Logger = new LoggerConfiguration()
 
 
 //Agrego servicio de cadena de conexion
-//builder.Services.AddDbContext<Hotel_ToolsContext>(options =>
-// options.UseSqlServer(builder.Configuration.GetConnectionString("Hotel_Tools")));
+builder.Services.AddDbContext<HotelContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Hotel_Tools")));
+//================================================================
+
 
 //Agregar Servicio de Autenticación y Autorización
 //builder.Services.AddIdentity<Empleado,Rol>()
