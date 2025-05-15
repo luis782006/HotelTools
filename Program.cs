@@ -1,3 +1,4 @@
+using HotelTools.Autenticacion;
 using HotelTools.Components;
 using HotelTools.Models;
 using Microsoft.AspNetCore.Identity;
