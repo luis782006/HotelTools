@@ -6,6 +6,8 @@ using MudBlazor.Services;
 using Serilog;
 using Serilog.Events;
 using MudBlazor.Charts;
+using HotelTools.Seguridad;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,40 +47,20 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 //===============================================================
 
-
 //Agrego servicio de cadena de conexion
 builder.Services.AddDbContext<HotelContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Hotel_Tools")));
 //================================================================
 
-
-//Agregar Servicio de Autenticación y Autorización
-//builder.Services.AddIdentity<Empleado,Rol>()
-//  .AddDefaultTokenProviders()
-//  .AddEntityFrameworkStores<Hotel_ToolsContext>();
-
-//Configura Cookie Authentication
-//builder.Services.ConfigureApplicationCookie(options =>
-//{
-//    options.Cookie.HttpOnly = true;
-//    options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
-//    options.LoginPath = "/Account/Login";
-//    options.AccessDeniedPath = "/Account/AccessDenied";
-//    options.SlidingExpiration = true;
-//});
-
-////Politicas a
-//builder.Services.AddAuthorization(options =>
-//{
-//    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
-//    options.AddPolicy("RequireEmpleadoRole", policy => policy.RequireRole("Empleado"));
-//});
-
+//Autenticación y Autorización
+builder.Services.AddAuthenticationCore();
+builder.Services.AddScoped<AuthServices>();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<BrowserJS>();
 
 builder.Services.AddRazorComponents();
 builder.Services.AddServerSideBlazor()
     .AddCircuitOptions(options => { options.DetailedErrors = true; });
-
 
 
 var app = builder.Build();
@@ -96,10 +78,36 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-//app.UseAuthentication();
-//app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapRazorComponents<App>()
+
+app.Use(async (context, next) =>
+{
+    // Solo para la raíz ("/")
+    if (context.Request.Path == "/")
+    {
+        var cookies = context.Request.Cookies;
+
+        // Verificás si tu cookie personalizada existe y es válida (ejemplo "MiCookie")
+        if (cookies.TryGetValue(configuration["Util:CookieName"], out var token) && !string.IsNullOrEmpty(token))
+        {
+            // Si la cookie está presente y es válida, redirigís al /home
+            context.Response.Redirect("/home");
+            return;
+        }
+        else
+        {
+            // Si no hay cookie o no es válida, redirigís al /login
+            context.Response.Redirect("/login");
+            return;
+        }
+    }
+    await next();
+});
+
+
+app.MapRazorComponents<App>()        
     .AddInteractiveServerRenderMode();
 
 app.Run();

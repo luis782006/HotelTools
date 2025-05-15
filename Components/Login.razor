@@ -1,0 +1,136 @@
+@page "/login"
+@layout LoginLayout 
+
+@using HotelTools.Components.Layout
+@using Microsoft.AspNetCore.Components.Authorization
+@using Serilog;
+@inject IJSRuntime js
+@inject NavigationManager nav;
+@using System.ComponentModel.DataAnnotations
+@inject AuthServices authService;
+
+<style>
+    body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: url("img/fondo-hotel-cilene.webp") no-repeat center center;
+    background-size: cover;
+    }
+
+    .mud-container{
+        display: flex;        
+        justify-content: center;
+        align-items:flex-start;
+        
+    }
+
+    .formulario-login{
+        margin-top:0%;
+        width:50%;
+    }
+
+    .img-logo{
+        width:300px;
+        height:120px;
+    }
+
+    .formCentrado{
+        border-radius: 10px;
+        padding:10px;
+        width:300px;
+    }
+
+    .img-logo img{
+        border-radius: 50%;
+        background-color: white;
+        background: radial-gradient(circle, white 0%, rgba(255, 255, 255, 0) 70%);
+    }
+
+    .mud-card-header {
+        margin-top: 0%;
+        padding:5px;
+    }
+</style>
+
+<div class="formulario-login">
+    <div class="contenedor-logo"
+        <div class="img-logo">
+            <img src="img/logo.png" width="40%" />
+        </div>
+    </div>
+    <MudCard class="formCentrado">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5" Align="Align.Center">Iniciar Sesión</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudTextField T="string"
+                          Label="Usuario"
+                          @bind-Value="Usuario"
+                          Variant="Variant.Outlined"
+                          Class="mt-3" />
+            <MudTextField T="string"
+                          Label="Contraseña"
+                          @bind-Value="Password"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          Class="mt-3" />
+        </MudCardContent>
+        <MudCardActions Class="d-flex justify-center pa-2 ">
+            <MudButton OnClick="Autenticar"
+                       Class="mb-4"
+                       Variant="Variant.Filled"
+                       Color="Color.Info"
+                       Size="Size.Large"
+                       FullWidth="true">
+                Iniciar Sesión
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+
+    @if (infoError)
+    {
+        <br />
+        <div class="ui negative message">
+            <div class="header">
+                Problema al Ingresar.
+            </div>
+            <p>@errorLogin</p>
+        </div>
+    }
+</div>
+
+
+
+@code {
+
+    string Usuario { get; set; } = string.Empty;
+    string Password { get; set; } = string.Empty;
+    string errorLogin { get; set; } = string.Empty;
+    bool infoError = false;
+
+    public async Task Autenticar()
+    {
+        string paramUsername = Usuario;
+        string paramPassword = Password;
+        
+        var result = await authService.Login(Usuario,Password);
+
+        if(result)
+        {
+            StateHasChanged();
+        }
+        else
+        {
+            //errorLogin = seguridad.LastError;
+            infoError = true;
+        }
+        
+    }
+
+
+
+}
