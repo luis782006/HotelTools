@@ -1,6 +1,10 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @inherits LayoutComponentBase
 
+@inject IJSRuntime js;
+@inject IConfiguration configuration;
+@inject NavigationManager nav;
+
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -11,7 +15,6 @@
         
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">Hotel Tools</MudText>
-
         <MudSpacer />
            @*  <AuthorizeView>
                 <Authorized> *@
@@ -50,6 +53,7 @@
     private bool _drawerOpen = true;
     private bool _isDarkMode = true;
     MudTheme _theme = new MudTheme();
+    string Token { get; set; } = string.Empty;
 
     bool hasSession = false;
 
@@ -74,10 +78,10 @@
 
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        _theme = CreateTheme();
-    }
+    
+
+
+
     private async void Logout()
     {
         

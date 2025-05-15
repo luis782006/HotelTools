@@ -1,26 +1,74 @@
-﻿@page "/"
+﻿@page "/home"
 
-@* @using HotelTools.Models *@
-@* @inject Hotel_InventoryContext db *@
-@inject IConfiguration _configuration
+@inject IJSRuntime js
+@inject NavigationManager nav
+@using Microsoft.AspNetCore.Components.Authorization
 
+@* 
+<AuthorizeView>
+    <Authorized>
+        <h1>Hello, world!</h1>
+    </Authorized>
+    <NotAuthorized>
+        <p>Hola usuario</p>
+    </NotAuthorized>
+</AuthorizeView>
+    
 
-<PageTitle>Home</PageTitle>
-
-<h1>Hello, world!</h1>
 
 Welcome to your new app.
 
+<AuthorizeView Roles="Admin,User">
+    <Authorized>
+        <br/>
+        <br/>
+        <button class="btn btn-primary" @onclick="MostrarSaludos">Saber el Role</button>
+        <br />
+        <br />
+        <button class="btn btn-primary" @onclick="MostrarCounter">Counter</button>
+    </Authorized>
+   
+</AuthorizeView> *@
 
 @code{
-    string? conexion = "";
-    //List<Categoria> categorias = new ();
+    // [CascadingParameter]
+    // Task<AuthenticationState> AuthenticationTask { get; set; }
+    int num = 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+               
+    }
 
 
     protected override async Task OnInitializedAsync()
-    {
-        //conexion = _configuration.GetValue<string>("Hotel_Inventory");
-        //categorias =db.Categorias.ToList();
-        //Console.WriteLine(categorias.Count());
-    }   
+    {                  
+        // num += 1;
+        // Console.WriteLine($"Estoy en la página home. Valor de num: {num}");            
+    }
+
+        // var authState = await AuthenticationTask;
+        // if (authState?.User?.Identity?.IsAuthenticated == true)
+        // {
+        //     string message = $"Hola {authState.User.Identity.Name}";
+        //     Console.WriteLine(message); // Depuración
+        // }
+        // else
+        // {
+        //     Console.WriteLine("User is not authenticated in OnInitializedAsync."); // Depuración
+        // }
+    
+
+  
+    // private async Task MostrarSaludos()
+    // {
+    //     var authState = await AuthenticationTask;
+    //     string message = $"Hola {authState.User.Identity.Name}";              
+    //     await js.InvokeVoidAsync("alert", message);   
+    // }
+
+    // private async Task MostrarCounter()
+    // {
+    //    nav.NavigateTo("/counter");
+    // }
 }
