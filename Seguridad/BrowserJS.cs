@@ -12,11 +12,9 @@ namespace HotelTools.Seguridad
             _jsRuntime = jsRuntime;
         }
 
-        public async Task<bool> SetCookie(string cookieName, string cookieToken)
+        public async Task SetCookie(string cookieName, string cookieToken)
         {
-            await _jsRuntime.InvokeVoidAsync("extrasJS.SetCookie",cookieName,cookieToken);
-
-            return true;
+            await _jsRuntime.InvokeVoidAsync("extrasJS.SetCookie",cookieName,cookieToken);           
         }
 
         public async Task<object> GetCookie(string cookieName)
