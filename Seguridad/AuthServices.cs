@@ -16,11 +16,12 @@ namespace HotelTools.Seguridad
         private readonly BrowserJS _browserJS;
         private AuthenticationStateProvider authProvider;
 
-        public AuthServices(HotelContext context, IConfiguration config, ILogger<AuthServices> logger)
+        public AuthServices(HotelContext context, IConfiguration config, ILogger<AuthServices> logger, BrowserJS browserJS)
         {
             _context = context;
             _configuration = config;
             _logger = logger;
+            _browserJS = browserJS;
         }
         public async Task<bool> Login(string NombreUsuario, string Password)
         {
@@ -28,9 +29,12 @@ namespace HotelTools.Seguridad
             {
                 // Busca en la base de datos un empleado cuyo nombre coincida con el proporcionado 
                 // y cuya contraseña sea válida según el método de verificación de contraseñas.
-                var usuario = await _context.Empleados.Where(
-                        user => user.Nombre == NombreUsuario && 
-                        PasswordHasher.VerifyPassword(Password, user.Password, _configuration)).FirstOrDefaultAsync();
+                var candidatos = await _context.Empleados
+                     .Where(e => e.Nombre == NombreUsuario)
+                     .ToListAsync();
+
+                var usuario = candidatos.FirstOrDefault(u =>
+                    PasswordHasher.VerifyPassword(Password, u.Password, _configuration));
                 // obtener Rol
                 var rol = await _context.Rol.Where(
                         rol => rol.ID_Rol == usuario.ID_Rol).FirstOrDefaultAsync();
