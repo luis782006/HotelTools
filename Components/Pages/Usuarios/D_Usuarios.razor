@@ -1,0 +1,67 @@
+﻿@page "/usuariostest"
+@inject HotelContext _context;
+@inject IConfiguration _configuration;
+
+<MudCard c>
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h5" Align="Align.Center">Iniciar Sesión</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField T="string"
+                      Label="Usuario"
+                      @bind-Value="model.NombreUsuario"
+                      Variant="Variant.Outlined"
+                      Class="mt-3" />
+        <MudTextField T="string"
+                      Label="Contraseña"
+                      @bind-Value="model.Password"
+                      Variant="Variant.Outlined"
+                      InputType="InputType.Password"
+                      Class="mt-3" />
+    </MudCardContent>
+    <MudCardActions Class="d-flex justify-center pa-2 ">
+        <MudButton OnClick="Registrar"
+                   Class="mb-4"
+                   Variant="Variant.Filled"
+                   Color="Color.Info"
+                   Size="Size.Large"
+                   FullWidth="true">
+         Registrar
+        </MudButton>
+      
+    </MudCardActions>
+</MudCard>
+
+
+@code {
+    CuentaUsuario model = new();
+
+    public void Registrar()
+    {
+        string? claveSecreta = _configuration["Util:ClaveSecreta"];
+        Console.WriteLine(model.Password + claveSecreta);        
+        string pass = model.Password.Trim();
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(pass + claveSecreta, workFactor: 10);
+
+        Empleado empleado = new Empleado
+            {               
+                Nombre = "Luis",
+                Apellido = "Felipe",
+                ID_Cargo = 1, 
+                ID_Departamento = 1, 
+                NroContacto = "123456789",
+                ID_Rol = 1,
+                FechaDesde = DateTime.Now, // La fecha actual
+                FechaHasta = DateTime.Now.AddYears(1), // Opcional, ejemplo de duración
+                Activo = 1, // 1 para activo, 0 para inactivo
+                Password = passwordHash 
+            };
+
+        _context.Empleados.Add(empleado);
+        _context.SaveChanges(); 
+
+    }
+   
+}
