@@ -8,38 +8,52 @@ namespace HotelTools.Seguridad
 {
     public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     {
-
-        public const string CookieName = "Cookie_Hotel_Tools";
+       
         public readonly AuthServices _authService;
         public ClaimsPrincipal claimsPrincipal = new();
-        public readonly IJSRuntime _js;
+        
 
-        public CustomAuthenticationStateProvider(AuthServices authService, IJSRuntime js)
+        public CustomAuthenticationStateProvider()
         {
-            _authService = authService;
-            _js = js;
+           
+            
         }
 
         /// <summary>
         /// Metodo para obtener el estado de la autenticación
         /// </summary>        
-        public override Task<AuthenticationState> GetAuthenticationStateAsync()
+        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            return Task.FromResult(new AuthenticationState(claimsPrincipal));
+            await Task.FromResult(0); 
+            return new AuthenticationState(claimsPrincipal);
         }
 
-        public void NotificarLogin(Empleado empleado, string rol, string token)
+        public void LoginNotify(string nombre, decimal ID_Empleado,string rol)
         {
-            var claims = new List<Claim>
+            var identity= new ClaimsIdentity(new[]
             {
-                    new Claim(ClaimTypes.Name, empleado.Nombre.Trim()),
-                    new Claim(ClaimTypes.Role, rol),
-                    new Claim(ClaimTypes.NameIdentifier, empleado.ID_Empleado.ToString())
-            };
-            var claimsIdentity = new ClaimsIdentity(claims, "apiauth_type");
+               new Claim(ClaimTypes.Name, nombre.Trim()),
+               new Claim(ClaimTypes.Role, rol.Trim()),
+               new Claim(ClaimTypes.NameIdentifier, ID_Empleado.ToString())
+            }, "apiauth_type");
 
+            claimsPrincipal = new ClaimsPrincipal(identity);
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
+
+
+        //public void NotificarLogin(Empleado empleado, string rol, string token)
+        //{
+        //    var claims = new List<Claim>
+        //    {
+        //            new Claim(ClaimTypes.Name, empleado.Nombre.Trim()),
+        //            new Claim(ClaimTypes.Role, rol),
+        //            new Claim(ClaimTypes.NameIdentifier, empleado.ID_Empleado.ToString())
+        //    };
+        //    var claimsIdentity = new ClaimsIdentity(claims, "apiauth_type");
+
+        //    NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+        //}
 
     }    
 
