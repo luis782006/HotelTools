@@ -5,6 +5,8 @@
 @inject IConfiguration configuration;
 @inject NavigationManager nav;
 @inject BrowserJS browserJS;
+@inject AuthServices authService;
+@inject CustomAuthenticationStateProvider authStateProvider;
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudDialogProvider />
@@ -63,10 +65,13 @@
 
     bool hasSession = false;
 
-    protected override async Task OnInitializedAsync()
-    {        
-        Token = await browserJS.GetCookie("HotelTools");
-        var authState = await authenticationStateTask;                        
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await authStateProvider.GetAuthenticationStateFromCookieAsync();
+            StateHasChanged();
+        }
     }
 
    
@@ -97,12 +102,20 @@
 
     private async void Logout()
     {
+        var cookieName = configuration["Util:CookieName"];
+        var token = await browserJS.GetCookie(cookieName);
         
+        if (!string.IsNullOrEmpty(token))
+        {
+            await authService.Logout(token);
+        }
+        
+        authStateProvider.LogoutNotify();
+        nav.NavigateTo("/login", true);
     }
 
     private void LogIn()
     {
-       
+        nav.NavigateTo("/login", true);
     }
-
 }

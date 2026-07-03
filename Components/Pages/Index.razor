@@ -1,12 +1,4 @@
-﻿@page "/"
-@layout IndexLayout
-@using HotelTools.Components.Layout
-@inject IJSRuntime js;
-@inject IConfiguration configuration;
-@inject NavigationManager nav;
-@inject BrowserJS _browserJS;
-
-<style>
+﻿<style>
     body {
     display: flex;
     justify-content: center;
@@ -16,23 +8,3 @@
     background-size: cover;
     }
 </style>
-
-@code {
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {        
-        var cookieName = configuration["Util:CookieName"];
-        if (firstRender)
-        {
-            var haySesion=await _browserJS.GetCookie(cookieName);
-            if (!string.IsNullOrWhiteSpace(haySesion.ToString()))
-            {
-                nav.NavigateTo("/home", true);
-            }
-            else
-            {
-                nav.NavigateTo("/login", true);
-            }
-        }
-    }
-}

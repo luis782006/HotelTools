@@ -4,7 +4,6 @@
 @using HotelTools.Components.Layout
 @using Microsoft.AspNetCore.Components.Authorization
 @using Serilog;
-@inject IJSRuntime js
 @inject NavigationManager nav;
 @using System.ComponentModel.DataAnnotations
 @inject AuthServices authService;
@@ -55,7 +54,7 @@
 </style>
 
 <div class="formulario-login">
-    <div class="contenedor-logo"
+    <div class="contenedor-logo">
         <div class="img-logo">
             <img src="img/logo.png" width="40%" />
         </div>
@@ -79,7 +78,7 @@
                           InputType="InputType.Password"
                           Class="mt-3" />
         </MudCardContent>
-        <MudCardActions Class="d-flex justify-center pa-2 ">
+        <MudCardActions Class="d-flex justify-center flex-column pa-4">
             <MudButton OnClick="Autenticar"
                        Class="mb-4"
                        Variant="Variant.Filled"
@@ -88,19 +87,14 @@
                        FullWidth="true">
                 Iniciar Sesión
             </MudButton>
+            @if (infoError)
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-2" Variant="Variant.Outlined">
+                    <MudText Align="Align.Center" Class="mud-text-error">@errorLogin</MudText>
+                </MudAlert>
+            }
         </MudCardActions>
     </MudCard>
-
-    @if (infoError)
-    {
-        <br />
-        <div class="ui negative message">
-            <div class="header">
-                Problema al Ingresar.
-            </div>
-            <p>@errorLogin</p>
-        </div>
-    }
 </div>
 
 
@@ -114,22 +108,17 @@
 
     public async Task Autenticar()
     {
-        string paramUsername = Usuario;
-        string paramPassword = Password;
-        
-        var result = await authService.Login(Usuario,Password);
+        var result = await authService.Login(Usuario, Password);
 
-        if(result)
+        if (result)
         {
-            StateHasChanged();
             nav.NavigateTo("/home");
         }
         else
         {
-            //errorLogin = seguridad.LastError;
+            errorLogin = "Usuario o contraseña incorrectos.";
             infoError = true;
         }
-        
     }
 
 

@@ -7,77 +7,51 @@
 
 <AuthorizeView>
     <Authorized>
-        <h1>Hello, world!</h1>
+        <h1>Bienvenido, @context.User.Identity?.Name!</h1>
+        <p>Rol: @GetRole()</p>
     </Authorized>
     <NotAuthorized>
-        <p>Hola usuario</p>
+        <h1>No autorizado</h1>
+        <p>Debes iniciar sesión para acceder a esta página.</p>
+        <button class="btn btn-primary" @onclick="GoToLogin">Ir a Login</button>
     </NotAuthorized>
 </AuthorizeView>
-    
 
-
-<AuthorizeView Roles="Admin,User">
+<AuthorizeView Roles="Admin">
     <Authorized>
         <br/>
         <br/>
-        <button class="btn btn-primary" @onclick="MostrarSaludos">Saber el Role</button>
-        <br />
-        <br />
-        <button class="btn btn-primary" @onclick="MostrarCounter">Counter</button>
+        <MudText Typo="Typo.h5">Panel de Administración</MudText>
+        <MudText Typo="Typo.body1">Tienes acceso a todas las configuraciones del sistema.</MudText>
     </Authorized>
-   
-</AuthorizeView> 
+</AuthorizeView>
+
+<AuthorizeView Roles="User">
+    <Authorized>
+        <br/>
+        <br/>
+        <MudText Typo="Typo.h5">Panel de Usuario</MudText>
+        <MudText Typo="Typo.body1">Bienvenido al sistema HotelTools.</MudText>
+    </Authorized>
+</AuthorizeView>
 
 @code{
     [CascadingParameter]
     Task<AuthenticationState> AuthenticationTask { get; set; }
-    int num = 0;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private string GetRole()
     {
-        var authState = await AuthenticationTask;
+        var authState = AuthenticationTask.Result;
         if (authState?.User?.Identity?.IsAuthenticated == true)
         {
-            string message = $"Hola {authState.User.Identity.Name}";
-            Console.WriteLine(message); // Depuración
+            var role = authState.User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
+            return role ?? "Sin rol";
         }
-        else
-        {
-            var token = await browserJS.GetCookie("HotelTools");
-            var authState1 = await AuthenticationTask;
-            Console.WriteLine("User is not authenticated in OnInitializedAsync."); // Depuración
-        }
+        return "Sin rol";
     }
 
-
-    protected override async Task OnInitializedAsync()
-    {                  
-        // num += 1;
-        // Console.WriteLine($"Estoy en la página home. Valor de num: {num}");            
-        var authState = await AuthenticationTask;
-        if (authState?.User?.Identity?.IsAuthenticated == true)
-        {
-            string message = $"Hola {authState.User.Identity.Name}";
-            Console.WriteLine(message); // Depuración
-        }
-        else
-        {
-            Console.WriteLine("User is not authenticated in OnInitializedAsync."); // Depuración
-        }
-    }
-
-    
-
-  
-    private async Task MostrarSaludos()
+    private void GoToLogin()
     {
-        var authState = await AuthenticationTask;
-        string message = $"Hola {authState.User.Identity.Name}";              
-        await js.InvokeVoidAsync("alert", message);   
-    }
-
-    private async Task MostrarCounter()
-    {
-       nav.NavigateTo("/counter");
+        nav.NavigateTo("/login", true);
     }
 }
