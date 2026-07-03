@@ -1,6 +1,13 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @inherits LayoutComponentBase
 
+@inject IJSRuntime js;
+@inject IConfiguration configuration;
+@inject NavigationManager nav;
+@inject BrowserJS browserJS;
+@inject AuthServices authService;
+@inject CustomAuthenticationStateProvider authStateProvider;
+
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -11,20 +18,21 @@
         
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">Hotel Tools</MudText>
-
         <MudSpacer />
-           @*  <AuthorizeView>
-                <Authorized> *@
+             <AuthorizeView>
+                <Authorized> 
                     <div>
+                       
                         <MudIconButton style="color:white;" Icon="@Icons.Material.Filled.Logout" @onclick="Logout" />
                     </div>
-               @*  </Authorized>
-                <NotAuthorized> *@
+                 </Authorized>
+                <NotAuthorized> 
                     <div>
+                  
                     <MudIconButton style="color:white;" Icon="@Icons.Material.Filled.Login" @onclick="LogIn" />
                     </div>
-              @*   </NotAuthorized>
-            </AuthorizeView> *@
+                 </NotAuthorized>
+            </AuthorizeView>
        
     
      </MudAppBar>
@@ -47,12 +55,26 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
     private bool _drawerOpen = true;
     private bool _isDarkMode = true;
     MudTheme _theme = new MudTheme();
+    string Token { get; set; } = string.Empty;
 
     bool hasSession = false;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await authStateProvider.GetAuthenticationStateFromCookieAsync();
+            StateHasChanged();
+        }
+    }
+
+   
     void DrawerToggle()
     {
         _drawerOpen = !_drawerOpen;
@@ -74,18 +96,26 @@
 
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        _theme = CreateTheme();
-    }
+    
+
+
+
     private async void Logout()
     {
+        var cookieName = configuration["Util:CookieName"];
+        var token = await browserJS.GetCookie(cookieName);
         
+        if (!string.IsNullOrEmpty(token))
+        {
+            await authService.Logout(token);
+        }
+        
+        authStateProvider.LogoutNotify();
+        nav.NavigateTo("/login", true);
     }
 
     private void LogIn()
     {
-       
+        nav.NavigateTo("/login", true);
     }
-
 }

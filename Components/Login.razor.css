@@ -1,0 +1,63 @@
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: url("img/fondo-hotel-cilene.webp") no-repeat center center;
+    background-size: cover;
+}
+/* Cambiar apariencia del form*/
+.formCentrado {
+    background: #373740;
+    width: 300px;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+}
+
+.img-logo {
+    display: flex;
+    justify-content: center;
+}
+
+.formulario-login {
+    margin-top: 50%;
+    width: 40%;
+}
+
+.mud-card-header {
+    margin-top: 20%;
+}
+
+
+/*
+.img-logo{
+    display:flex;
+    justify-content:center;
+    background-color:white;
+    min-width:5%;       
+    border-radius:50%;
+    position:absolute;
+    z-index:1;
+    top:16%;
+}
+.formulario-login {
+    margin-top: 10%;
+    height: 320px;
+}
+.mud-card-header{
+    margin-top:18%;
+}
+    /* @media screen and (max-width: 606px) {
+    .img-logo {
+        max-width: 100%;
+    }
+    .formulario-login {
+        margin-top: 130px;
+        height: 320px;
+        max-width: 40%;
+    }
+
+
+    */

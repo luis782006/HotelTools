@@ -11,7 +11,7 @@ namespace HotelTools.Models
         public string Token { get; set; }
         public decimal ID_Empleado { get; set; }
         public DateTime FechaExpiracion { get; set; }
-        public string EstadoSesion { get; set; }
+        public bool EstadoSesion { get; set; }
     }
 
 }
