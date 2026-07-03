@@ -3,7 +3,7 @@
         var d = new Date();
         d.setTime(d.getTime() + (30 * 60 * 1000)); // 30 minutos en milisegundos
         var expires = "expires=" + d.toUTCString();
-        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/;SameSite=Strict";
     },
 
     //SetCookie: function (cname, cvalue, exdays) { var d = new Date(); d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000)); var expires = "expires=" + d.toUTCString(); document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/"; },
@@ -12,7 +12,7 @@
         var d = new Date();
         d.setTime(d.getTime() - (365 * 24 * 60 * 60 * 1000));
         var expires = "expires=" + d.toUTCString();
-        document.cookie = cname + "=" + ";" + expires + ";path=/";
+        document.cookie = cname + "=" + ";" + expires + ";path=/;SameSite=Strict";
     },
 
     GetCookie: function (cname)

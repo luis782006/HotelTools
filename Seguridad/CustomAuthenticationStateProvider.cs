@@ -1,5 +1,6 @@
 ﻿using HotelTools.Models;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.JSInterop;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -8,57 +9,101 @@ namespace HotelTools.Seguridad
 {
     public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     {
-       
-        public readonly AuthServices _authService;
-        public ClaimsPrincipal claimsPrincipal = new();
-        
+        private readonly BrowserJS _browserJS;
+        private readonly HotelContext _context;
+        private readonly IConfiguration _configuration;
+        private AuthenticationState _currentState;
+        private bool _stateSetExplicitly;
 
-        public CustomAuthenticationStateProvider()
+        public CustomAuthenticationStateProvider(BrowserJS browserJS, HotelContext context, IConfiguration configuration)
         {
-           
-            
+            _browserJS = browserJS;
+            _context = context;
+            _configuration = configuration;
+            _currentState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
         }
 
-        /// <summary>
-        /// Metodo para obtener el estado de la autenticación
-        /// </summary>        
-        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
+        public override Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            await Task.FromResult(0); 
-            return new AuthenticationState(claimsPrincipal);
+            return Task.FromResult(_currentState);
         }
 
-        public void LoginNotify(string nombre, decimal ID_Empleado,string rol)
+        public async Task<AuthenticationState> GetAuthenticationStateFromCookieAsync()
         {
-            var identity= new ClaimsIdentity(new[]
+            if (_stateSetExplicitly)
+                return _currentState;
+
+            var cookieName = _configuration["Util:CookieName"];
+            var cookie = await _browserJS.GetCookie(cookieName);
+
+            if (string.IsNullOrEmpty(cookie))
             {
-               new Claim(ClaimTypes.Name, nombre.Trim()),
-               new Claim(ClaimTypes.Role, rol.Trim()),
-               new Claim(ClaimTypes.NameIdentifier, ID_Empleado.ToString())
-            }, "apiauth_type");
+                _currentState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                return _currentState;
+            }
 
-            claimsPrincipal = new ClaimsPrincipal(identity);
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            var sesion = await _context.SesionesActivas
+                .FirstOrDefaultAsync(s => s.Token == cookie && s.EstadoSesion && s.FechaExpiracion > DateTime.Now);
+
+            if (sesion == null)
+            {
+                _currentState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                return _currentState;
+            }
+
+            // Renovar expiracion por inactividad
+            sesion.FechaExpiracion = DateTime.Now.AddMinutes(30);
+            await _context.SaveChangesAsync();
+
+            var empleado = await _context.Empleados.FindAsync(sesion.ID_Empleado);
+            if (empleado == null)
+            {
+                _currentState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                return _currentState;
+            }
+
+            var rol = await _context.Rol.FindAsync(empleado.ID_Rol);
+            if (rol == null)
+            {
+                _currentState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+                return _currentState;
+            }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, empleado.Nombre.Trim()),
+                new Claim(ClaimTypes.Role, rol.NombreRol.Trim()),
+                new Claim(ClaimTypes.NameIdentifier, empleado.ID_Empleado.ToString())
+            };
+
+            var identity = new ClaimsIdentity(claims, "cookie");
+            _currentState = new AuthenticationState(new ClaimsPrincipal(identity));
+            return _currentState;
         }
 
+        public void LoginNotify(string nombre, decimal ID_Empleado, string rol)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, nombre.Trim()),
+                new Claim(ClaimTypes.Role, rol.Trim()),
+                new Claim(ClaimTypes.NameIdentifier, ID_Empleado.ToString())
+            };
 
-        //public void NotificarLogin(Empleado empleado, string rol, string token)
-        //{
-        //    var claims = new List<Claim>
-        //    {
-        //            new Claim(ClaimTypes.Name, empleado.Nombre.Trim()),
-        //            new Claim(ClaimTypes.Role, rol),
-        //            new Claim(ClaimTypes.NameIdentifier, empleado.ID_Empleado.ToString())
-        //    };
-        //    var claimsIdentity = new ClaimsIdentity(claims, "apiauth_type");
+            var identity = new ClaimsIdentity(claims, "cookie");
+            var user = new ClaimsPrincipal(identity);
 
-        //    NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
-        //}
+            _currentState = new AuthenticationState(user);
+            _stateSetExplicitly = true;
+            NotifyAuthenticationStateChanged(Task.FromResult(_currentState));
+        }
 
-    }    
-
-      
-     
-
-    
+        public void LogoutNotify()
+        {
+            var anonymous = new ClaimsPrincipal(new ClaimsIdentity());
+            _currentState = new AuthenticationState(anonymous);
+            _stateSetExplicitly = false;
+            NotifyAuthenticationStateChanged(Task.FromResult(_currentState));
+        }
+    }
 }

@@ -20,11 +20,16 @@ namespace HotelTools.Seguridad
         public async Task<string> GetCookie(string cookieName)
         {
             var cookieValue = await _jsRuntime.InvokeAsync<string>("extrasJS.GetCookie", cookieName);
-            if (string.IsNullOrEmpty(cookieValue.ToString()))
+            if (string.IsNullOrEmpty(cookieValue))
             {
                 return null;
             }
             return cookieValue;
+        }
+
+        public async Task DeleteCookie(string cookieName)
+        {
+            await _jsRuntime.InvokeVoidAsync("extrasJS.DeleteCookie", cookieName);
         }
     }
 }
