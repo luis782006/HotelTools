@@ -24,6 +24,9 @@ namespace HotelTools.Models
         public virtual DbSet<Rol> Rol { get; set; }
         public virtual DbSet<SesionActiva> SesionesActivas { get; set; }
         public virtual DbSet<Cargo> Cargo { get; set; }
+        public virtual DbSet<Permiso> Permisos { get; set; }
+        public virtual DbSet<RolPermiso> RolPermisos { get; set; }
+        public virtual DbSet<Departamento> Departamentos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -53,6 +56,30 @@ namespace HotelTools.Models
                 entity.HasKey(c => c.ID_SesionesActiva);
                 entity.Property(e => e.ID_SesionesActiva).ValueGeneratedOnAdd(); 
                 entity.ToTable("SesionesActivas", "Empleados");
+            });
+
+            modelBuilder.Entity<Permiso>(entity =>
+            {
+                entity.HasKey(c => c.ID_Permiso);
+                entity.Property(e => e.ID_Permiso).ValueGeneratedOnAdd();
+                entity.Property(e => e.Codigo).HasMaxLength(120);
+                entity.Property(e => e.Descripcion).HasMaxLength(250);
+                entity.ToTable("Permisos", "Empleados");
+            });
+
+            modelBuilder.Entity<RolPermiso>(entity =>
+            {
+                entity.HasKey(c => c.ID_RolPermiso);
+                entity.Property(e => e.ID_RolPermiso).ValueGeneratedOnAdd();
+                entity.ToTable("RolPermisos", "Empleados");
+            });
+
+            modelBuilder.Entity<Departamento>(entity =>
+            {
+                entity.HasKey(c => c.ID_Departamento);
+                entity.Property(e => e.ID_Departamento).ValueGeneratedOnAdd();
+                entity.Property(e => e.NombreDepartamento).HasMaxLength(40);
+                entity.ToTable("Departamentos", "General");
             });
         }
     }

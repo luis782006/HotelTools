@@ -1,0 +1,174 @@
+@page "/listapermisos"
+@attribute [Authorize(Policy = "ManageRoles")]
+
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ManageRoles" Objeto="ListaPermisos" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4">Listado de Permisos</MudText>
+    <MudPaper Class="d-flex justify-content-center p-4" Width="100%">
+        <MudPaper style="width:80rem;">
+            @if (Cargando)
+            {
+                <MudGrid Style="text-align:center;">
+                    <MudItem sm="12">
+                        <MudText Typo="Typo.h6">Cargando registros....</MudText>
+                        <MudProgressCircular Color="Color.Primary" Style="height:70px;width:70px;" Indeterminate="true" />
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudTable Items="@lstPermisos" Breakpoint="Breakpoint.Md" style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<PermisoListDto,bool>(FilterFunc1)">
+                    <ToolBarContent>
+                        <div style="display:flex; flex-direction:column; width:100%;">
+                            <div style="display:flex; align-items:center;">
+                                <MudTextField T="string" @bind-Value="searchString" style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                                <MudTooltip Text="Agregar Permiso">
+                                    <MudFab Size="Size.Small" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionPermiso(maxWidth, "Insertar", 0))" />
+                                </MudTooltip>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <MudSelect T="decimal" @bind-Value="departamentoFiltro" Label="Filtrar por departamento" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width:280px;">
+                                    <MudSelectItem Value="0m">Todos</MudSelectItem>
+                                    @foreach (var d in departamentos)
+                                    {
+                                        <MudSelectItem Value="d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </div>
+                        </div>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Acciones</MudTh>
+                        <MudTh style="text-align:left;">Codigo</MudTh>
+                        <MudTh style="text-align:left;">Descripcion</MudTh>
+                        <MudTh style="text-align:left;">Roles Asignados</MudTh>
+                        <MudTh style="text-align:left;">Departamentos</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Class="d-inline-flex justify-center">
+                            <MudTooltip Text="Ver Permiso">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionPermiso(maxWidth, "Ver", @context.ID_Permiso))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Editar Permiso">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionPermiso(maxWidth, "Editar", @context.ID_Permiso))" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd DataLabel="Codigo">@context.Codigo</MudTd>
+                        <MudTd DataLabel="Descripcion">@context.Descripcion</MudTd>
+                        <MudTd DataLabel="Roles">@context.Roles</MudTd>
+                        <MudTd DataLabel="Departamentos">@context.Departamentos</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudTable<PermisoListDto> table;
+    private string searchString = "";
+    private decimal departamentoFiltro;
+    private string infoFormat = "{first_item}-{last_item} de {all_items}";
+    private bool Cargando = true;
+
+    private List<PermisoListDto> lstPermisos = new();
+    private List<Departamento> departamentos = new();
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+
+    private DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        departamentos = await Context.Departamentos.AsNoTracking().OrderBy(d => d.NombreDepartamento).ToListAsync();
+
+        var permisos = await Context.Permisos.AsNoTracking().ToListAsync();
+        var asignaciones = await (from rp in Context.RolPermisos
+                                  join r in Context.Rol on rp.ID_Rol equals r.ID_Rol
+                                  join d in Context.Departamentos on rp.ID_Departamento equals d.ID_Departamento into dJoin
+                                  from d in dJoin.DefaultIfEmpty()
+                                  select new
+                                  {
+                                      rp.ID_Permiso,
+                                      rp.ID_Departamento,
+                                      NombreRol = r.NombreRol.Trim(),
+                                      NombreDepto = d != null ? d.NombreDepartamento.Trim() : null
+                                  }).ToListAsync();
+
+        lstPermisos = permisos.Select(p =>
+        {
+            var rels = asignaciones.Where(a => a.ID_Permiso == p.ID_Permiso).ToList();
+            return new PermisoListDto
+            {
+                ID_Permiso = p.ID_Permiso,
+                Codigo = p.Codigo.Trim(),
+                Descripcion = p.Descripcion.Trim(),
+                Roles = string.Join(", ", rels.Select(r => r.NombreRol).Distinct()),
+                Departamentos = string.Join(", ", rels.Where(r => r.NombreDepto != null).Select(r => r.NombreDepto).Distinct()),
+                DeptosAsignados = rels.Where(r => r.ID_Departamento.HasValue).Select(r => r.ID_Departamento.Value).Distinct().ToList()
+            };
+        }).OrderBy(p => p.Codigo).ToList();
+    }
+
+    private bool FilterFunc1(PermisoListDto element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(PermisoListDto element, string search)
+    {
+        if (departamentoFiltro > 0 && !element.DeptosAsignados.Contains(departamentoFiltro))
+            return false;
+        if (string.IsNullOrWhiteSpace(search))
+            return true;
+        if (element.Codigo.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Descripcion.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Roles.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Departamentos.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task AccionPermiso(DialogOptions options, string modo, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", modo },
+            { "ID", id }
+        };
+        var dialog = DialogService.Show<D_Permiso>(modo.ToUpper() + " PERMISO", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarDatos();
+            StateHasChanged();
+        }
+    }
+
+    public class PermisoListDto
+    {
+        public decimal ID_Permiso { get; set; }
+        public string Codigo { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public string Roles { get; set; } = "";
+        public string Departamentos { get; set; } = "";
+        public List<decimal> DeptosAsignados { get; set; } = new();
+    }
+}

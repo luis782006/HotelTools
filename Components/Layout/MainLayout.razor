@@ -9,6 +9,7 @@
 @inject CustomAuthenticationStateProvider authStateProvider;
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
@@ -110,7 +111,6 @@
             await authService.Logout(token);
         }
         
-        authStateProvider.LogoutNotify();
         nav.NavigateTo("/login", true);
     }
 

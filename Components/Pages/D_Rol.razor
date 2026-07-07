@@ -1,0 +1,100 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" Margin="Margin.Dense">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="rol.NombreRol" Label="Nombre del Rol"
+                        ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="El nombre del rol es requerido" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo != "Ver")
+        {
+            <MudButton OnClick="ConfirmarGuardar"
+                Color="Color.Success" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Save">
+                @(Modo == "Insertar" ? "Guardar" : "Guardar")
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+
+    private bool SoloLectura;
+    private bool success = true;
+    private string[] errors = { };
+
+    private Rol rol = new();
+    private MudForm? form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver";
+
+        if (ID > 0)
+        {
+            var r = await Context.Rol.FindAsync(ID);
+            if (r != null)
+                rol = r;
+        }
+    }
+
+    private async Task ConfirmarGuardar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea guardar los cambios?",
+            yesText: "Guardar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Guardar();
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (Modo == "Insertar")
+            {
+                Context.Rol.Add(rol);
+            }
+            else
+            {
+                Context.Rol.Update(rol);
+            }
+
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add(Modo == "Insertar" ? "Rol creado correctamente" : "Rol actualizado correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al guardar: {ex.Message}", Severity.Error);
+        }
+    }
+
+    void Cancelar() => MudDialog.Cancel();
+}

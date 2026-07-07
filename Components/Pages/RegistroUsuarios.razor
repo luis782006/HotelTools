@@ -1,0 +1,406 @@
+@page "/registrousuarios"
+@attribute [Authorize(Policy = "ManageUsers")]
+
+@using OfficeOpenXml
+@using Microsoft.EntityFrameworkCore
+
+<MudText Typo="Typo.h4">Registro de Usuarios</MudText>
+<MudDivider Class="my-4" />
+
+<MudTabs @bind-ActivePanelIndex="tabIndex" Elevation="0" Rounded="true" Border="true">
+    <MudTabPanel Text="Carga Individual" Icon="@Icons.Material.Filled.PersonAdd">
+        <MudPaper Class="pa-6 mt-4">
+            <MudForm @ref="formIndividual" @bind-IsValid="@formValido" @bind-Errors="@errorsIndividual">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                            @bind-Value="nuevoUsuario.Nombre" Label="Nombre" Required="true"
+                            RequiredError="El nombre es requerido" />
+                        <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                            @bind-Value="nuevoUsuario.Apellido" Label="Apellido" Required="true"
+                            RequiredError="El apellido es requerido" />
+                        <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="nuevoUsuario.ID_Cargo"
+                            Variant="Variant.Outlined" Label="Cargo" Required="true"
+                            RequiredError="Debe seleccionar un cargo">
+                            <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                            @foreach (var c in cargos)
+                            {
+                                <MudSelectItem Value="c.ID_Cargo">@c.NombreCargo</MudSelectItem>
+                            }
+                        </MudSelect>
+                        <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="nuevoUsuario.ID_Rol"
+                            Variant="Variant.Outlined" Label="Rol" Required="true"
+                            RequiredError="Debe seleccionar un rol">
+                            <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                            @foreach (var r in roles)
+                            {
+                                <MudSelectItem Value="r.ID_Rol">@r.NombreRol</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                            @bind-Value="nuevoUsuario.NroContacto" Label="Nro Contacto" />
+                        <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="nuevoUsuario.ID_Departamento"
+                            Variant="Variant.Outlined" Label="Departamento" Required="true"
+                            RequiredError="Debe seleccionar un departamento">
+                            <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                            @foreach (var d in departamentos)
+                            {
+                                <MudSelectItem Value="d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
+                            }
+                        </MudSelect>
+                        <MudCheckBox Margin="Margin.Dense" T="bool" @bind-Checked="esActivo" Label="Activo" />
+                        <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                            Label="Contraseña" @bind-Value="passwordGenerado"
+                            InputType="@passwordInput" Adornment="Adornment.End"
+                            AdornmentIcon="@passwordInputIcon" OnAdornmentClick="TogglePasswordVisibilidad" />
+                        <MudButton @onclick="GenerarPassword" Variant="Variant.Outlined"
+                            Color="Color.Info" Size="Size.Small" Class="mt-1">
+                            Generar Contraseña
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+                <MudButton OnClick="ConfirmarGuardarIndividual" Variant="Variant.Filled"
+                    Color="Color.Primary" Class="mt-4"
+                    Disabled="!formValido || guardandoIndividual">
+                    Guardar Usuario
+                </MudButton>
+                <MudAlert Severity="Severity.Success" Class="mt-3" Variant="Variant.Outlined"
+                    Style="@(individualExito ? "" : "display:none")">@mensajeIndividualExito</MudAlert>
+                <MudAlert Severity="Severity.Error" Class="mt-3" Variant="Variant.Outlined"
+                    Style="@(individualError ? "" : "display:none")">@mensajeIndividualError</MudAlert>
+            </MudForm>
+        </MudPaper>
+    </MudTabPanel>
+    <MudTabPanel Text="Carga Masiva (Excel)" Icon="@Icons.Material.Filled.UploadFile">
+        <MudPaper Class="pa-6 mt-4">
+            <MudButton OnClick="DescargarTemplate" Variant="Variant.Outlined" Color="Color.Info" Class="mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.Download" Class="mr-2" /> Descargar Template
+            </MudButton>
+
+            <InputFile OnChange="@OnFilesSelected" accept=".xlsx" class="mb-2" />
+
+            @if (!string.IsNullOrEmpty(nombreArchivo))
+            {
+                <MudText Class="mt-2 mud-text-secondary">@nombreArchivo</MudText>
+            }
+
+            @if (filrosImport.Count > 0)
+            {
+                <MudText Typo="Typo.h6" Class="mt-4">Vista previa (@filrosImport.Count registros)</MudText>
+                <MudTable Items="filrosImport" Dense="true" Hover="true" Class="mt-2" Striped="true">
+                    <HeaderContent>
+                        <MudTh>Fila</MudTh>
+                        <MudTh>Nombre</MudTh>
+                        <MudTh>Apellido</MudTh>
+                        <MudTh>Cargo</MudTh>
+                        <MudTh>Departamento</MudTh>
+                        <MudTh>Contacto</MudTh>
+                        <MudTh>Rol</MudTh>
+                        <MudTh>Activo</MudTh>
+                        <MudTh>Estado</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Fila">@context.RowNumber</MudTd>
+                        <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                        <MudTd DataLabel="Apellido">@context.Apellido</MudTd>
+                        <MudTd DataLabel="Cargo">@context.Cargo</MudTd>
+                        <MudTd DataLabel="Departamento">@context.Departamento</MudTd>
+                        <MudTd DataLabel="Contacto">@context.NroContacto</MudTd>
+                        <MudTd DataLabel="Rol">@context.Rol</MudTd>
+                        <MudTd DataLabel="Activo">@(context.Activo ? "Si" : "No")</MudTd>
+                        <MudTd DataLabel="Estado">
+                            @if (context.Errores.Count > 0)
+                            {
+                                <MudText Color="Color.Error" Class="mud-text-small">@string.Join("; ", context.Errores)</MudText>
+                            }
+                            else
+                            {
+                                <MudText Color="Color.Success">Valido</MudText>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                <MudText Class="mt-2">@filrosImport.Count(r => r.Valido) validos, @filrosImport.Count(r => !r.Valido) con errores</MudText>
+
+                <MudButton OnClick="ImportarUsuarios" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" Disabled="importando || filrosImport.Count(r => r.Valido) == 0">
+                    Importar Usuarios
+                </MudButton>
+
+                <MudAlert Severity="Severity.Success" Class="mt-3" Variant="Variant.Outlined" Style="@(masivoExito ? "" : "display:none")">@mensajeMasivoExito</MudAlert>
+                <MudAlert Severity="Severity.Error" Class="mt-3" Variant="Variant.Outlined" Style="@(masivoError ? "" : "display:none")">@mensajeMasivoError</MudAlert>
+            }
+        </MudPaper>
+    </MudTabPanel>
+</MudTabs>
+
+@code {
+    private int tabIndex;
+    private bool guardandoIndividual, importando, individualExito, individualError, masivoExito, masivoError;
+    private string passwordGenerado, mensajeIndividualExito, mensajeIndividualError, mensajeMasivoExito, mensajeMasivoError, nombreArchivo;
+    private bool formValido, esActivo = true;
+    private string[] errorsIndividual = { };
+    private bool passVisible;
+    private string passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+    private InputType passwordInput = InputType.Password;
+
+    private Empleado nuevoUsuario = new();
+    private List<Cargo> cargos = new();
+    private List<Departamento> departamentos = new();
+    private List<Rol> roles = new();
+    private List<UsuarioImportRow> filrosImport = new();
+
+    private MudForm? formIndividual;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cargos = await Context.Cargo.AsNoTracking().ToListAsync();
+        departamentos = await Context.Departamentos.AsNoTracking().ToListAsync();
+        roles = await Context.Rol.AsNoTracking().ToListAsync();
+
+        nuevoUsuario.Activo = 1;
+        GenerarPassword();
+    }
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IConfiguration Configuration { get; set; }
+    [Inject] private IJSRuntime Js { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+
+    private void GenerarPassword()
+    {
+        var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
+        var random = new Random();
+        passwordGenerado = new string(Enumerable.Range(0, 10).Select(_ => chars[random.Next(chars.Length)]).ToArray());
+    }
+
+    private void TogglePasswordVisibilidad()
+    {
+        passVisible = !passVisible;
+        passwordInputIcon = passVisible ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
+        passwordInput = passVisible ? InputType.Text : InputType.Password;
+    }
+
+    private async Task ConfirmarGuardarIndividual()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea guardar el nuevo usuario?",
+            yesText: "Guardar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await GuardarUsuarioIndividual();
+        }
+    }
+
+    private async Task GuardarUsuarioIndividual()
+    {
+        guardandoIndividual = true;
+        individualExito = false;
+        individualError = false;
+
+        try
+        {
+            nuevoUsuario.Activo = esActivo ? (byte)1 : (byte)0;
+            nuevoUsuario.Password = PasswordHasher.HashPassword(passwordGenerado, Configuration);
+            nuevoUsuario.FechaDesde = DateTime.Now;
+            nuevoUsuario.FechaHasta = DateTime.MaxValue;
+
+            Context.Empleados.Add(nuevoUsuario);
+            await Context.SaveChangesAsync();
+
+            mensajeIndividualExito = $"Usuario {nuevoUsuario.Nombre} {nuevoUsuario.Apellido} registrado correctamente. Contraseña: {passwordGenerado}";
+            individualExito = true;
+
+            nuevoUsuario = new Empleado { Activo = 1 };
+            esActivo = true;
+            GenerarPassword();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            mensajeIndividualError = $"Error al guardar: {ex.Message}";
+            individualError = true;
+        }
+        finally
+        {
+            guardandoIndividual = false;
+        }
+    }
+
+    private async Task OnFilesSelected(InputFileChangeEventArgs e)
+    {
+        filrosImport.Clear();
+        nombreArchivo = "";
+        masivoExito = false;
+        masivoError = false;
+
+        var file = e.File;
+        if (file == null) return;
+
+        nombreArchivo = file.Name;
+
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+        using var stream = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(stream);
+        stream.Position = 0;
+
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets[0];
+        if (worksheet == null)
+        {
+            mensajeMasivoError = "El archivo no contiene datos en la primera hoja.";
+            masivoError = true;
+            return;
+        }
+
+        var rowCount = worksheet.Dimension?.Rows ?? 0;
+        if (rowCount < 2)
+        {
+            mensajeMasivoError = "El archivo no contiene datos (solo cabecera).";
+            masivoError = true;
+            return;
+        }
+
+        for (int row = 2; row <= rowCount; row++)
+        {
+            var importRow = new UsuarioImportRow
+            {
+                RowNumber = row,
+                Nombre = worksheet.Cells[row, 1].Text?.Trim() ?? "",
+                Apellido = worksheet.Cells[row, 2].Text?.Trim() ?? "",
+                Cargo = worksheet.Cells[row, 3].Text?.Trim() ?? "",
+                Departamento = worksheet.Cells[row, 4].Text?.Trim() ?? "",
+                NroContacto = worksheet.Cells[row, 5].Text?.Trim() ?? "",
+                Rol = worksheet.Cells[row, 6].Text?.Trim() ?? "",
+                Activo = worksheet.Cells[row, 7].Text?.Trim().ToLower() == "si"
+            };
+
+            if (string.IsNullOrWhiteSpace(importRow.Nombre))
+                importRow.Errores.Add("Nombre requerido");
+            if (string.IsNullOrWhiteSpace(importRow.Apellido))
+                importRow.Errores.Add("Apellido requerido");
+            if (string.IsNullOrWhiteSpace(importRow.Cargo))
+                importRow.Errores.Add("Cargo requerido");
+            if (string.IsNullOrWhiteSpace(importRow.Departamento))
+                importRow.Errores.Add("Departamento requerido");
+            if (string.IsNullOrWhiteSpace(importRow.Rol))
+                importRow.Errores.Add("Rol requerido");
+
+            filrosImport.Add(importRow);
+        }
+    }
+
+    private async Task ImportarUsuarios()
+    {
+        importando = true;
+        masivoExito = false;
+        masivoError = false;
+
+        try
+        {
+            var validos = filrosImport.Where(r => r.Valido).ToList();
+            int insertados = 0;
+            var errores = new List<string>();
+
+            foreach (var row in validos)
+            {
+                try
+                {
+                    var cargo = cargos.FirstOrDefault(c => c.NombreCargo.Trim().Equals(row.Cargo, StringComparison.OrdinalIgnoreCase));
+                    var depto = departamentos.FirstOrDefault(d => d.NombreDepartamento.Trim().Equals(row.Departamento, StringComparison.OrdinalIgnoreCase));
+                    var rol = roles.FirstOrDefault(r => r.NombreRol.Trim().Equals(row.Rol, StringComparison.OrdinalIgnoreCase));
+
+                    if (cargo == null) { errores.Add($"Fila {row.RowNumber}: Cargo '{row.Cargo}' no encontrado"); continue; }
+                    if (depto == null) { errores.Add($"Fila {row.RowNumber}: Departamento '{row.Departamento}' no encontrado"); continue; }
+                    if (rol == null) { errores.Add($"Fila {row.RowNumber}: Rol '{row.Rol}' no encontrado"); continue; }
+
+                    var pass = GenerarPasswordInline();
+                    var empleado = new Empleado
+                    {
+                        Nombre = row.Nombre,
+                        Apellido = row.Apellido,
+                        ID_Cargo = cargo.ID_Cargo,
+                        ID_Departamento = depto.ID_Departamento,
+                        NroContacto = row.NroContacto,
+                        ID_Rol = rol.ID_Rol,
+                        Activo = row.Activo ? (byte)1 : (byte)0,
+                        FechaDesde = DateTime.Now,
+                        FechaHasta = DateTime.MaxValue,
+                        Password = PasswordHasher.HashPassword(pass, Configuration)
+                    };
+
+                    Context.Empleados.Add(empleado);
+                    await Context.SaveChangesAsync();
+                    insertados++;
+                }
+                catch (Exception ex)
+                {
+                    errores.Add($"Fila {row.RowNumber}: {ex.Message}");
+                }
+            }
+
+            mensajeMasivoExito = $"{insertados} usuarios importados correctamente.";
+            if (errores.Count > 0)
+                mensajeMasivoExito += $" Errores: {string.Join(" | ", errores)}";
+            masivoExito = true;
+            filrosImport.Clear();
+            nombreArchivo = "";
+        }
+        catch (Exception ex)
+        {
+            mensajeMasivoError = $"Error durante la importacion: {ex.Message}";
+            masivoError = true;
+        }
+        finally
+        {
+            importando = false;
+        }
+    }
+
+    private string GenerarPasswordInline()
+    {
+        var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
+        var random = new Random();
+        return new string(Enumerable.Range(0, 10).Select(_ => chars[random.Next(chars.Length)]).ToArray());
+    }
+
+    private async Task DescargarTemplate()
+    {
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        using var package = new ExcelPackage();
+        var sheet = package.Workbook.Worksheets.Add("Usuarios");
+        sheet.Cells[1, 1].Value = "Nombre";
+        sheet.Cells[1, 2].Value = "Apellido";
+        sheet.Cells[1, 3].Value = "Cargo";
+        sheet.Cells[1, 4].Value = "Departamento";
+        sheet.Cells[1, 5].Value = "NroContacto";
+        sheet.Cells[1, 6].Value = "Rol";
+        sheet.Cells[1, 7].Value = "Activo (Si/No)";
+        sheet.Cells[1, 1, 1, 7].Style.Font.Bold = true;
+
+        var data = package.GetAsByteArray();
+        var ms = new MemoryStream(data);
+        using var streamRef = new DotNetStreamReference(ms);
+        await Js.InvokeVoidAsync("downloadFileFromStream", "template_usuarios.xlsx", streamRef);
+    }
+
+    public class UsuarioImportRow
+    {
+        public int RowNumber { get; set; }
+        public string Nombre { get; set; } = "";
+        public string Apellido { get; set; } = "";
+        public string Cargo { get; set; } = "";
+        public string Departamento { get; set; } = "";
+        public string NroContacto { get; set; } = "";
+        public string Rol { get; set; } = "";
+        public bool Activo { get; set; } = true;
+        public List<string> Errores { get; set; } = new();
+        public bool Valido => Errores.Count == 0;
+    }
+}

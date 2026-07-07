@@ -1,5 +1,5 @@
 ﻿@page "/panelhabitaciones"
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Policy = "ViewHabitacionesStatus")]
 <h3>Panel de Habitaciones</h3>
 
 @code {
