@@ -1,0 +1,45 @@
+@inject SeguridadSesion SegSesion
+@inject AuthenticationStateProvider AuthState
+
+@if (accesoOk)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public string PermisoRequerido { get; set; }
+
+    public bool accesoOk { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        accesoOk = true;
+
+        if (!string.IsNullOrWhiteSpace(PermisoRequerido))
+        {
+            var authState = await AuthState.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var tieneClaim = authState.User.HasClaim("Permiso", PermisoRequerido);
+                if (tieneClaim)
+                {
+                    accesoOk = true;
+                }
+                else
+                {
+                    accesoOk = await SegSesion.TienePermiso(PermisoRequerido);
+                }
+            }
+            else
+            {
+                accesoOk = false;
+            }
+        }
+
+        StateHasChanged();
+    }
+}

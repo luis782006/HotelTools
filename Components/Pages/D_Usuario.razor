@@ -1,0 +1,205 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IConfiguration Configuration
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" Margin="Margin.Dense">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="empleado.Nombre" Label="Nombre"
+                        ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="El nombre es requerido" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="empleado.Apellido" Label="Apellido"
+                        ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="El apellido es requerido" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="empleado.ID_Cargo"
+                        ReadOnly="@SoloLectura" Variant="Variant.Outlined" Label="Cargo" Required="true"
+                        RequiredError="Debe seleccionar un cargo">
+                        @foreach (var c in cargos)
+                        {
+                            <MudSelectItem Value="c.ID_Cargo">@c.NombreCargo</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="empleado.ID_Departamento"
+                        ReadOnly="@SoloLectura" Variant="Variant.Outlined" Label="Departamento" Required="true"
+                        RequiredError="Debe seleccionar un departamento">
+                        @foreach (var d in departamentos)
+                        {
+                            <MudSelectItem Value="d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="empleado.ID_Rol"
+                        ReadOnly="@SoloLectura" Variant="Variant.Outlined" Label="Rol" Required="true"
+                        RequiredError="Debe seleccionar un rol">
+                        @foreach (var r in roles)
+                        {
+                            <MudSelectItem Value="r.ID_Rol">@r.NombreRol</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="empleado.NroContacto" Label="Nro Contacto"
+                        ReadOnly="@SoloLectura" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudCheckBox ReadOnly="@SoloLectura" Margin="Margin.Dense"
+                        T="bool" @bind-Checked="esActivo" Label="Activo" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        Label="Contraseña (dejar vacio para mantener)" Value="@password"
+                        ValueChanged="@(EventCallback.Factory.Create<string>(this, s => { password = s; passwordModificada = true; }))"
+                        ReadOnly="@SoloLectura" Placeholder="Sin cambios"
+                        InputType="@PasswordInput" Adornment="Adornment.End"
+                        AdornmentIcon="@PasswordInputIcon" OnAdornmentClick="VerPassword" />
+                    @if (!SoloLectura)
+                    {
+                        <MudButton @onclick="GenerarPassword" Variant="Variant.Outlined"
+                            Color="Color.Info" Size="Size.Small" Class="mt-1">
+                            Generar Contraseña
+                        </MudButton>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo != "Ver")
+        {
+            <MudButton OnClick="ConfirmarGuardar"
+                Color="Color.Success" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Save">
+                Guardar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+
+    private bool SoloLectura;
+    private bool success = true;
+    private string[] errors = { };
+    private bool esActivo;
+    private string password = "";
+    private bool passwordModificada;
+    private bool isShow;
+    private string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+    private InputType PasswordInput = InputType.Password;
+
+    private Empleado empleado = new();
+    private List<Cargo> cargos = new();
+    private List<Departamento> departamentos = new();
+    private List<Rol> roles = new();
+    private MudForm? form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cargos = await Context.Cargo.AsNoTracking().ToListAsync();
+        departamentos = await Context.Departamentos.AsNoTracking().ToListAsync();
+        roles = await Context.Rol.AsNoTracking().ToListAsync();
+
+        SoloLectura = Modo == "Ver";
+
+        if (ID > 0)
+        {
+            var emp = await Context.Empleados.FindAsync(ID);
+            if (emp != null)
+            {
+                empleado = emp;
+                esActivo = empleado.Activo == 1;
+            }
+        }
+
+        passwordModificada = false;
+    }
+
+    private async Task ConfirmarGuardar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea guardar los cambios realizados?",
+            yesText: "Guardar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Guardar();
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            empleado.Activo = esActivo ? (byte)1 : (byte)0;
+            empleado.Nombre = empleado.Nombre.Trim();
+            empleado.Apellido = empleado.Apellido.Trim();
+
+            if (passwordModificada)
+            {
+                empleado.Password = PasswordHasher.HashPassword(password, Configuration);
+            }
+
+            Context.Empleados.Update(empleado);
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Usuario actualizado correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+            Snackbar.Add("Usuario actualizado correctamente", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al guardar: {ex.Message}", Severity.Error);
+        }
+    }
+
+    void Cancelar() => MudDialog.Cancel();
+
+    void VerPassword()
+    {
+        if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+
+    void GenerarPassword()
+    {
+        var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
+        var random = new Random();
+        password = new string(Enumerable.Range(0, 10).Select(_ => chars[random.Next(chars.Length)]).ToArray());
+        passwordModificada = true;
+    }
+}
