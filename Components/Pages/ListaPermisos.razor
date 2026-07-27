@@ -22,14 +22,14 @@
             {
                 <MudTable Items="@lstPermisos" Breakpoint="Breakpoint.Md" style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<PermisoListDto,bool>(FilterFunc1)">
                     <ToolBarContent>
-                        <div style="display:flex; flex-direction:column; width:100%;">
-                            <div style="display:flex; align-items:center;">
-                                <MudTextField T="string" @bind-Value="searchString" style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                        <MudStack>
+                            <MudStack Row="true" AlignItems="AlignItems.Center">
+                                <MudTextField T="string" @bind-Value="searchString" Style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
                                 <MudTooltip Text="Agregar Permiso">
                                     <MudFab Size="Size.Small" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionPermiso(maxWidth, "Insertar", 0))" />
                                 </MudTooltip>
-                            </div>
-                            <div style="display:flex; justify-content:flex-end;">
+                            </MudStack>
+                            <MudStack Row="true" Justify="Justify.FlexEnd">
                                 <MudSelect T="decimal" @bind-Value="departamentoFiltro" Label="Filtrar por departamento" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width:280px;">
                                     <MudSelectItem Value="0m">Todos</MudSelectItem>
                                     @foreach (var d in departamentos)
@@ -37,8 +37,8 @@
                                         <MudSelectItem Value="d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
                                     }
                                 </MudSelect>
-                            </div>
-                        </div>
+                            </MudStack>
+                        </MudStack>
                     </ToolBarContent>
                     <HeaderContent>
                         <MudTh>Acciones</MudTh>

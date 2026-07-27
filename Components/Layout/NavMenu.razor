@@ -1,11 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">HotelTools</a>
-    </div>
-</div>
-
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<MudAppBar Elevation="0" Color="Color.Dark">
+    <MudText Typo="Typo.h6" Class="ml-3">HotelTools</MudText>
+</MudAppBar>
 <MudPaper Width="250px" Class="py-3" Elevation="0">    
     <MudNavMenu>
         <MudText Typo="Typo.h6" Class="px-4">Modulos</MudText>
@@ -24,15 +20,14 @@
     </MudNavMenu>
 </MudPaper>
     <RequierePermiso PermisoRequerido="ManageConfiguraciones">
-        <div style="position:absolute; bottom:0;">
-        <MudPaper Width="250px" Class="py-3" Elevation="0">
+        <MudPaper Width="250px" Class="mt-auto" Elevation="0">
             <MudNavMenu Color="Color.Info" Rounded="true" Margin="Margin.Dense" Class="m-3 p-1">
                 <MudText Typo="Typo.h6" Class="px-4">Configuraciones</MudText>
                 <MudText Typo="Typo.body2" Class="px-4 mud-text-secondary">Panel Admin</MudText>
                 <MudDivider Class="my-2" />
                 <MudNavGroup Title="Configuraciones Globales" Icon="@Icons.Material.Filled.Settings" Expanded="false">
                     <MudNavLink Href="/">Habitaciones</MudNavLink>
-                    <MudNavLink Href="/">Departamentos</MudNavLink>
+                    <MudNavLink Href="/listadepartamentos">Departamentos</MudNavLink>
                     <MudNavLink Href="/">Categoria Habitaciones</MudNavLink>
                     <MudNavGroup Title="Usuarios" Icon="@Icons.Material.Filled.Person" Expanded="false">
                         <MudNavLink Href="/listausuarios">Listado de Usuarios</MudNavLink>
@@ -58,6 +53,5 @@
                 <MudNavLink Href="/about">About</MudNavLink>
             </MudNavMenu>
         </MudPaper>
-        </div>
     </RequierePermiso>
 
