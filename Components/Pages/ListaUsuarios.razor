@@ -20,19 +20,19 @@
             }
             else
             {
-                <MudTable Items="@lstUsuarios" Breakpoint="Breakpoint.Md" style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<UsuarioListDto,bool>(FilterFunc1)">
+                <MudTable Items="@lstUsuarios" Breakpoint="Breakpoint.Md" style="width:100%; padding:1rem; margin-top:1rem;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<UsuarioListDto,bool>(FilterFunc1)">
                     <ToolBarContent>
-                        <div style="display:flex; flex-direction:column; width:100%;">
-                            <div style="display:flex; align-items:center;">
-                                <MudTextField T="string" @bind-Value="searchString" style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                        <MudPaper Style="width:100%; margin-top:1rem;">
+                            <MudPaper Style="display:flex; justify-content: flex-end;" Elevation="0">
                                 <MudTooltip Text="Agregar Usuario">
-                                    <MudFab Size="Size.Small" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => nav.NavigateTo("/registrousuarios"))" />
+                                    <MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => nav.NavigateTo("/registrousuarios"))" />
                                 </MudTooltip>
-                            </div>
-                            <div style="display:flex; justify-content:flex-end;">
-                                <MudCheckBox T="bool" @bind-Checked="mostrarSoloActivos" Color="Color.Primary" Label="Solo activos" />
-                            </div>
-                        </div>
+                            </MudPaper>
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="margin-bottom:2rem;">
+                                <MudTextField T="string" @bind-Value="searchString" Placeholder="Buscar..." Style="width:300px;" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                                <MudCheckBox T="bool" @bind-Checked="mostrarSoloActivos" Color="Color.Primary" Label="Solo no activos" />
+                            </MudStack>
+                        </MudPaper>
                     </ToolBarContent>
                     <HeaderContent>
                         <MudTh>Acciones</MudTh>
