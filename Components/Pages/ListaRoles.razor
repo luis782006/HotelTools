@@ -1,0 +1,108 @@
+@page "/registroles"
+@attribute [Authorize(Policy = "ManageRoles")]
+
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ManageRoles" Objeto="ListaRoles" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4">Listado de Roles</MudText>
+    <MudPaper Class="d-flex justify-content-center p-4" Width="100%">
+        <MudPaper style="width:80rem;">
+            @if (Cargando)
+            {
+                <MudGrid Style="text-align:center;">
+                    <MudItem sm="12">
+                        <MudText Typo="Typo.h6">Cargando registros....</MudText>
+                        <MudProgressCircular Color="Color.Primary" Style="height:70px;width:70px;" Indeterminate="true" />
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudTable Items="@lstRoles" Breakpoint="Breakpoint.Md" style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<Rol,bool>(FilterFunc1)">
+                    <ToolBarContent>
+                        <MudTextField T="string" @bind-Value="searchString" style="width: 300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                        <MudTooltip Text="Agregar Rol">
+                            <MudFab Size="Size.Small" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionRol(maxWidth, "Insertar", 0))" />
+                        </MudTooltip>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Acciones</MudTh>
+                        <MudTh style="text-align:left;">Nombre del Rol</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Class="d-inline-flex justify-center">
+                            <MudTooltip Text="Ver Rol">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionRol(maxWidth, "Ver", @context.ID_Rol))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Editar Rol">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionRol(maxWidth, "Editar", @context.ID_Rol))" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd DataLabel="Nombre">@context.NombreRol</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudTable<Rol> table;
+    private string searchString = "";
+    private string infoFormat = "{first_item}-{last_item} de {all_items}";
+    private bool Cargando = true;
+
+    private List<Rol> lstRoles = new();
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+
+    private DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        lstRoles = await Context.Rol.AsNoTracking().OrderBy(r => r.NombreRol).ToListAsync();
+    }
+
+    private bool FilterFunc1(Rol element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(Rol element, string search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return true;
+        if (element.NombreRol.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task AccionRol(DialogOptions options, string modo, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", modo },
+            { "ID", id }
+        };
+        var dialog = DialogService.Show<D_Rol>(modo.ToUpper() + " ROL", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarDatos();
+            StateHasChanged();
+        }
+    }
+}

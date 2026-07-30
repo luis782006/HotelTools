@@ -9,6 +9,7 @@
 @inject CustomAuthenticationStateProvider authStateProvider;
 
 <MudThemeProvider @bind-IsDarkMode="@_isDarkMode" Theme="_theme" />
+<MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
@@ -19,20 +20,14 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
         <MudText Typo="Typo.h5" Class="ml-3">Hotel Tools</MudText>
         <MudSpacer />
-             <AuthorizeView>
-                <Authorized> 
-                    <div>
-                       
-                        <MudIconButton style="color:white;" Icon="@Icons.Material.Filled.Logout" @onclick="Logout" />
-                    </div>
-                 </Authorized>
-                <NotAuthorized> 
-                    <div>
-                  
-                    <MudIconButton style="color:white;" Icon="@Icons.Material.Filled.Login" @onclick="LogIn" />
-                    </div>
-                 </NotAuthorized>
-            </AuthorizeView>
+                     <AuthorizeView>
+                        <Authorized> 
+                            <MudIconButton Style="color:white;" Icon="@Icons.Material.Filled.Logout" @onclick="Logout" />
+                         </Authorized>
+                        <NotAuthorized> 
+                            <MudIconButton Style="color:white;" Icon="@Icons.Material.Filled.Login" @onclick="LogIn" />
+                         </NotAuthorized>
+                    </AuthorizeView>
        
     
      </MudAppBar>
@@ -110,7 +105,6 @@
             await authService.Logout(token);
         }
         
-        authStateProvider.LogoutNotify();
         nav.NavigateTo("/login", true);
     }
 

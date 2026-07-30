@@ -1,0 +1,173 @@
+@page "/listausuarios"
+@attribute [Authorize(Policy = "ManageUsers")]
+
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ManageUsers" Objeto="ListaUsuarios" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4">Listado de Usuarios</MudText>
+    <MudPaper Class="d-flex justify-content-center p-4" Width="100%">
+        <MudPaper style="width:80rem;">
+            @if (Cargando)
+            {
+                <MudGrid Style="text-align:center;">
+                    <MudItem sm="12">
+                        <MudText Typo="Typo.h6">Cargando registros....</MudText>
+                        <MudProgressCircular Color="Color.Primary" Style="height:70px;width:70px;" Indeterminate="true" />
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudTable Items="@lstUsuarios" Breakpoint="Breakpoint.Md" style="width:100%; padding:1rem; margin-top:1rem;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<UsuarioListDto,bool>(FilterFunc1)">
+                    <ToolBarContent>
+                        <MudPaper Style="width:100%; margin-top:1rem;">
+                            <MudPaper Style="display:flex; justify-content: flex-end;" Elevation="0">
+                                <MudTooltip Text="Agregar Usuario">
+                                    <MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => nav.NavigateTo("/registrousuarios"))" />
+                                </MudTooltip>
+                            </MudPaper>
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="margin-bottom:2rem;">
+                                <MudTextField T="string" @bind-Value="searchString" Placeholder="Buscar..." Style="width:300px;" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                                <MudCheckBox T="bool" @bind-Checked="mostrarSoloActivos" Color="Color.Primary" Label="Solo no activos" />
+                            </MudStack>
+                        </MudPaper>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Acciones</MudTh>
+                        <MudTh style="text-align:left;">Nombre</MudTh>
+                        <MudTh style="text-align:left;">Apellido</MudTh>
+                        <MudTh style="text-align:left;">Cargo</MudTh>
+                        <MudTh style="text-align:left;">Departamento</MudTh>
+                        <MudTh style="text-align:left;">Rol</MudTh>
+                        <MudTh style="text-align:left;">Contacto</MudTh>
+                        <MudTh style="text-align:left;">Activo</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Class="d-inline-flex justify-center">
+                            <MudTooltip Text="Ver Usuario">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionUsuario(maxWidth, "Ver", @context.ID_Empleado))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Editar Usuario">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionUsuario(maxWidth, "Editar", @context.ID_Empleado))" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                        <MudTd DataLabel="Apellido">@context.Apellido</MudTd>
+                        <MudTd DataLabel="Cargo">@context.Cargo</MudTd>
+                        <MudTd DataLabel="Departamento">@context.Departamento</MudTd>
+                        <MudTd DataLabel="Rol">@context.Rol</MudTd>
+                        <MudTd DataLabel="Contacto">@context.NroContacto</MudTd>
+                        <MudTd DataLabel="Activo">
+                            <MudText Color="@(context.Activo ? Color.Success : Color.Error)">@(context.Activo ? "Si" : "No")</MudText>
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudTable<UsuarioListDto> table;
+    private string searchString = "";
+    private string infoFormat = "{first_item}-{last_item} de {all_items}";
+    private bool Cargando = true;
+    private bool mostrarSoloActivos;
+
+    private List<UsuarioListDto> lstUsuarios = new();
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private NavigationManager nav { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+    [Inject] private ISnackbar Snackbar { get; set; }
+
+    private DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        var query = from e in Context.Empleados
+                    join c in Context.Cargo on e.ID_Cargo equals c.ID_Cargo
+                    join d in Context.Departamentos on e.ID_Departamento equals d.ID_Departamento
+                    join r in Context.Rol on e.ID_Rol equals r.ID_Rol
+                    orderby e.Nombre, e.Apellido
+                    select new UsuarioListDto
+                    {
+                        ID_Empleado = e.ID_Empleado,
+                        Nombre = e.Nombre.Trim(),
+                        Apellido = e.Apellido.Trim(),
+                        Cargo = c.NombreCargo.Trim(),
+                        Departamento = d.NombreDepartamento.Trim(),
+                        NroContacto = e.NroContacto.Trim(),
+                        Rol = r.NombreRol.Trim(),
+                        Activo = e.Activo == 1
+                    };
+
+        lstUsuarios = await query.AsNoTracking().ToListAsync();
+    }
+
+    private bool FilterFunc1(UsuarioListDto element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(UsuarioListDto element, string search)
+    {
+        if (mostrarSoloActivos && !element.Activo)
+            return false;
+        if (string.IsNullOrWhiteSpace(search))
+            return true;
+        if (element.Nombre.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Apellido.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Cargo.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Departamento.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Rol.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.NroContacto.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task AccionUsuario(DialogOptions options, string modo, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", modo },
+            { "ID", id }
+        };
+        var dialog = DialogService.Show<D_Usuario>(modo.ToUpper() + " USUARIO", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarDatos();
+            StateHasChanged();
+        }
+    }
+
+    public class UsuarioListDto
+    {
+        public decimal ID_Empleado { get; set; }
+        public string Nombre { get; set; } = "";
+        public string Apellido { get; set; } = "";
+        public string Cargo { get; set; } = "";
+        public string Departamento { get; set; } = "";
+        public string NroContacto { get; set; } = "";
+        public string Rol { get; set; } = "";
+        public bool Activo { get; set; }
+    }
+}
