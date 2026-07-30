@@ -22,10 +22,12 @@
             {
                 <MudTable Items="@lstRoles" Breakpoint="Breakpoint.Md" style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<Rol,bool>(FilterFunc1)">
                     <ToolBarContent>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" Style="width:100%;">
                         <MudTextField T="string" @bind-Value="searchString" style="width: 300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
                         <MudTooltip Text="Agregar Rol">
                             <MudFab Size="Size.Small" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionRol(maxWidth, "Insertar", 0))" />
                         </MudTooltip>
+                        </MudStack>
                     </ToolBarContent>
                     <HeaderContent>
                         <MudTh>Acciones</MudTh>
