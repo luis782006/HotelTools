@@ -12,28 +12,24 @@
     </Authorized>
     <NotAuthorized>
         <h1>No autorizado</h1>
-        <p>Debes iniciar sesión para acceder a esta página.</p>
+        <p>Debes iniciar sesion para acceder a esta pagina.</p>
         <button class="btn btn-primary" @onclick="GoToLogin">Ir a Login</button>
     </NotAuthorized>
 </AuthorizeView>
 
-<AuthorizeView Roles="Admin">
-    <Authorized>
-        <br/>
-        <br/>
-        <MudText Typo="Typo.h5">Panel de Administración</MudText>
-        <MudText Typo="Typo.body1">Tienes acceso a todas las configuraciones del sistema.</MudText>
-    </Authorized>
-</AuthorizeView>
+<RequierePermiso PermisoRequerido="ManageConfiguraciones">
+    <br/>
+    <br/>
+    <MudText Typo="Typo.h5">Panel de Administracion</MudText>
+    <MudText Typo="Typo.body1">Tienes acceso a todas las configuraciones del sistema.</MudText>
+</RequierePermiso>
 
-<AuthorizeView Roles="User">
-    <Authorized>
-        <br/>
-        <br/>
-        <MudText Typo="Typo.h5">Panel de Usuario</MudText>
-        <MudText Typo="Typo.body1">Bienvenido al sistema HotelTools.</MudText>
-    </Authorized>
-</AuthorizeView>
+<RequierePermiso PermisoRequerido="ViewQuejas">
+    <br/>
+    <br/>
+    <MudText Typo="Typo.h5">Panel de Usuario</MudText>
+    <MudText Typo="Typo.body1">Bienvenido al sistema HotelTools.</MudText>
+</RequierePermiso>
 
 @code{
     [CascadingParameter]

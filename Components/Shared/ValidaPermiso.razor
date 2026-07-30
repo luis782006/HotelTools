@@ -1,0 +1,32 @@
+@inject NavigationManager nav
+@inject SeguridadSesion seguridad
+@inject AuthenticationStateProvider AuthState
+
+@code {
+    [Parameter]
+    public string Objeto { get; set; } = string.Empty;
+
+    [Parameter]
+    public string PermisoRequerido { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        bool accesoOk = false;
+
+        if (!string.IsNullOrWhiteSpace(PermisoRequerido))
+        {
+            var authState = await AuthState.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                accesoOk = authState.User.HasClaim("Permiso", PermisoRequerido);
+                if (!accesoOk)
+                    accesoOk = await seguridad.TienePermiso(PermisoRequerido);
+            }
+        }
+
+        if (!accesoOk)
+        {
+            nav.NavigateTo($"NoAutorizado/{PermisoRequerido}/{Objeto}");
+        }
+    }
+}
