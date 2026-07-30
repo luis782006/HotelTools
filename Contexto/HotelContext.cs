@@ -27,6 +27,7 @@ namespace HotelTools.Models
         public virtual DbSet<Permiso> Permisos { get; set; }
         public virtual DbSet<RolPermiso> RolPermisos { get; set; }
         public virtual DbSet<Departamento> Departamentos { get; set; }
+        public virtual DbSet<CategoriaHabitacion> CategoriaHabitaciones { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -80,6 +81,14 @@ namespace HotelTools.Models
                 entity.Property(e => e.ID_Departamento).ValueGeneratedOnAdd();
                 entity.Property(e => e.NombreDepartamento).HasMaxLength(40);
                 entity.ToTable("Departamentos", "General");
+            });
+
+            modelBuilder.Entity<CategoriaHabitacion>(entity =>
+            {
+                entity.HasKey(c => c.ID_Categoria);
+                entity.Property(e => e.ID_Categoria).ValueGeneratedOnAdd();
+                entity.Property(e => e.TipoHab).HasMaxLength(20);
+                entity.ToTable("Categorias", "Inventarios");
             });
         }
     }
