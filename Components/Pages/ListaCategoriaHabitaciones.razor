@@ -1,12 +1,12 @@
-@page "/listadepartamentos"
+@page "/listacategoriahabitaciones"
 @attribute [Authorize(Policy = "ManageConfiguraciones")]
 
 @using Microsoft.EntityFrameworkCore
 
-<ValidaPermiso PermisoRequerido="ManageConfiguraciones" Objeto="ListaDepartamentos" />
+<ValidaPermiso PermisoRequerido="ManageConfiguraciones" Objeto="ListaCategoriaHabitaciones" />
 
 <MudContainer>
-    <MudText Typo="Typo.h4">Listado de Departamentos</MudText>
+    <MudText Typo="Typo.h4">Listado de Categorías de Habitaciones</MudText>
     <MudPaper Class="d-flex justify-content-center p-4" Width="100%">
         <MudPaper Style="width:80rem;">
             @if (Cargando)
@@ -20,32 +20,32 @@
             }
             else
             {
-                <MudTable Items="@lstDepartamentos" Breakpoint="Breakpoint.Md" Style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<Departamento,bool>(FilterFunc1)">
+                <MudTable Items="@lstCategorias" Breakpoint="Breakpoint.Md" Style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<CategoriaHabitacion,bool>(FilterFunc1)">
                     <ToolBarContent>
                         <MudStack Row="true" Justify="Justify.SpaceBetween" Style="width:100%;">
                             <MudTextField T="string" @bind-Value="searchString" Style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
-                            <MudTooltip Text="Agregar Departamento">
-                                <MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionDepartamento(maxWidth, "Insertar", 0))" />
+                            <MudTooltip Text="Agregar Categoría">
+                                <MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionCategoria(maxWidth, "Insertar", 0))" />
                             </MudTooltip>
                         </MudStack>
                     </ToolBarContent>
                     <HeaderContent>
                         <MudTh>Acciones</MudTh>
-                        <MudTh Style="text-align:left;">Nombre del Departamento</MudTh>
+                        <MudTh Style="text-align:left;">Tipo de Habitación</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd Class="d-inline-flex justify-center">
-                            <MudTooltip Text="Ver Departamento">
-                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionDepartamento(maxWidth, "Ver", @context.ID_Departamento))" />
+                            <MudTooltip Text="Ver Categoría">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionCategoria(maxWidth, "Ver", @context.ID_Categoria))" />
                             </MudTooltip>
-                            <MudTooltip Text="Editar Departamento">
-                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionDepartamento(maxWidth, "Editar", @context.ID_Departamento))" />
+                            <MudTooltip Text="Editar Categoría">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionCategoria(maxWidth, "Editar", @context.ID_Categoria))" />
                             </MudTooltip>
-                            <MudTooltip Text="Eliminar Departamento">
-                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@((e) => AccionDepartamento(maxWidth, "Eliminar", @context.ID_Departamento))" />
+                            <MudTooltip Text="Eliminar Categoría">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@((e) => AccionCategoria(maxWidth, "Eliminar", @context.ID_Categoria))" />
                             </MudTooltip>
                         </MudTd>
-                        <MudTd DataLabel="Nombre">@context.NombreDepartamento</MudTd>
+                        <MudTd DataLabel="Tipo">@context.TipoHab</MudTd>
                     </RowTemplate>
                     <PagerContent>
                         <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
@@ -57,12 +57,12 @@
 </MudContainer>
 
 @code {
-    private MudTable<Departamento> table;
+    private MudTable<CategoriaHabitacion> table;
     private string searchString = "";
     private string infoFormat = "{first_item}-{last_item} de {all_items}";
     private bool Cargando = true;
 
-    private List<Departamento> lstDepartamentos = new();
+    private List<CategoriaHabitacion> lstCategorias = new();
 
     [Inject] private HotelContext Context { get; set; }
     [Inject] private IDialogService DialogService { get; set; }
@@ -81,28 +81,28 @@
 
     private async Task CargarDatos()
     {
-        lstDepartamentos = await Context.Departamentos.AsNoTracking().OrderBy(d => d.NombreDepartamento).ToListAsync();
+        lstCategorias = await Context.CategoriaHabitaciones.AsNoTracking().OrderBy(c => c.TipoHab).ToListAsync();
     }
 
-    private bool FilterFunc1(Departamento element) => FilterFunc(element, searchString);
+    private bool FilterFunc1(CategoriaHabitacion element) => FilterFunc(element, searchString);
 
-    private bool FilterFunc(Departamento element, string search)
+    private bool FilterFunc(CategoriaHabitacion element, string search)
     {
         if (string.IsNullOrWhiteSpace(search))
             return true;
-        if (element.NombreDepartamento.Contains(search, StringComparison.OrdinalIgnoreCase))
+        if (element.TipoHab.Contains(search, StringComparison.OrdinalIgnoreCase))
             return true;
         return false;
     }
 
-    private async Task AccionDepartamento(DialogOptions options, string modo, decimal id)
+    private async Task AccionCategoria(DialogOptions options, string modo, decimal id)
     {
         var parameters = new DialogParameters
         {
             { "Modo", modo },
             { "ID", id }
         };
-        var dialog = DialogService.Show<D_Departamento>(modo.ToUpper() + " DEPARTAMENTO", parameters, options);
+        var dialog = DialogService.Show<D_CategoriaHabitacion>(modo.ToUpper() + " CATEGORÍA", parameters, options);
         var result = await dialog.Result;
         if (!result.Canceled)
         {

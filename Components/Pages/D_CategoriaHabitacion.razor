@@ -1,0 +1,140 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="categoria.TipoHab" Label="Tipo de Habitación"
+                        ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="El tipo de habitación es requerido" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo == "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarEliminar"
+                Color="Color.Error" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Delete">
+                Eliminar
+            </MudButton>
+        }
+        @if (Modo != "Ver" && Modo != "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarGuardar"
+                Color="Color.Success" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Save">
+                Guardar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+
+    private bool SoloLectura;
+    private bool success = true;
+    private string[] errors = { };
+
+    private CategoriaHabitacion categoria = new();
+    private MudForm? form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver" || Modo == "Eliminar";
+
+        if (ID > 0)
+        {
+            var c = await Context.CategoriaHabitaciones.FindAsync(ID);
+            if (c != null)
+                categoria = c;
+        }
+    }
+
+    private async Task ConfirmarGuardar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea guardar los cambios?",
+            yesText: "Guardar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Guardar();
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (Modo == "Insertar")
+            {
+                Context.CategoriaHabitaciones.Add(categoria);
+            }
+            else
+            {
+                Context.CategoriaHabitaciones.Update(categoria);
+            }
+
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add(Modo == "Insertar" ? "Categoría creada correctamente" : "Categoría actualizada correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al guardar: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar Eliminación",
+            "¿Está seguro de eliminar esta categoría?",
+            yesText: "Eliminar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Eliminar();
+        }
+    }
+
+    private async Task Eliminar()
+    {
+        try
+        {
+            Context.CategoriaHabitaciones.Remove(categoria);
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Categoría eliminada correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al eliminar: {ex.Message}", Severity.Error);
+        }
+    }
+
+    void Cancelar() => MudDialog.Cancel();
+}
