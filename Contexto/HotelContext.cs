@@ -32,6 +32,9 @@ namespace HotelTools.Models
         public virtual DbSet<Proveedor> Proveedores { get; set; }
         public virtual DbSet<RazonSocial> RazonSociales { get; set; }
         public virtual DbSet<Representante> Representantes { get; set; }
+        public virtual DbSet<CategoriaProducto> CategoriasProductos { get; set; }
+        public virtual DbSet<Modelo> Modelos { get; set; }
+        public virtual DbSet<Producto> Productos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -131,6 +134,32 @@ namespace HotelTools.Models
                 entity.Property(e => e.TelefonoCelular).HasMaxLength(30);
                 entity.Property(e => e.Email).HasMaxLength(100);
                 entity.ToTable("Representante", "Inventarios");
+            });
+
+            modelBuilder.Entity<CategoriaProducto>(entity =>
+            {
+                entity.HasKey(c => c.ID_CategoriasPro);
+                entity.Property(e => e.ID_CategoriasPro).ValueGeneratedOnAdd();
+                entity.Property(e => e.NombreCatProductos).HasMaxLength(60);
+                entity.ToTable("CategoriasProductos", "Inventarios");
+            });
+
+            modelBuilder.Entity<Modelo>(entity =>
+            {
+                entity.HasKey(c => c.ID_Modelos);
+                entity.Property(e => e.ID_Modelos).ValueGeneratedOnAdd();
+                entity.Property(e => e.NombreModelos).HasMaxLength(50);
+                entity.ToTable("Modelos", "Inventarios");
+            });
+
+            modelBuilder.Entity<Producto>(entity =>
+            {
+                entity.HasKey(c => c.ID_Productos);
+                entity.Property(e => e.ID_Productos).ValueGeneratedOnAdd();
+                entity.Property(e => e.Codigo).HasMaxLength(80);
+                entity.Property(e => e.Descripcion).HasMaxLength(60);
+                entity.Property(e => e.ID_NroFacturaFK);
+                entity.ToTable("Productos", "Inventarios");
             });
         }
     }

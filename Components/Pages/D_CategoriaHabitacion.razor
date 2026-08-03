@@ -32,6 +32,7 @@
         @if (Modo != "Ver" && Modo != "Eliminar")
         {
             <MudButton OnClick="ConfirmarGuardar"
+                Disabled="!success"
                 Color="Color.Success" Variant="Variant.Filled"
                 StartIcon="@Icons.Material.Filled.Save">
                 Guardar
@@ -61,6 +62,15 @@
             var c = await Context.CategoriaHabitaciones.FindAsync(ID);
             if (c != null)
                 categoria = c;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Modo != "Ver" && Modo != "Eliminar")
+        {
+            form?.Validate();
+            StateHasChanged();
         }
     }
 

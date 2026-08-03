@@ -1,0 +1,163 @@
+@page "/listaproductos"
+@attribute [Authorize(Policy = "ManageInventario")]
+
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ManageInventario" Objeto="ListaProductos" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4">Listado de Productos</MudText>
+    <MudPaper Class="d-flex justify-content-center p-4" Width="100%">
+        <MudPaper Style="width:80rem;">
+            @if (Cargando)
+            {
+                <MudGrid Style="text-align:center;">
+                    <MudItem sm="12">
+                        <MudText Typo="Typo.h6">Cargando registros...</MudText>
+                        <MudProgressCircular Color="Color.Primary" Style="height:70px;width:70px;" Indeterminate="true" />
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudTable Items="@lstProductos" Breakpoint="Breakpoint.Md" Style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<ProductoListDto,bool>(FilterFunc1)">
+                    <ToolBarContent>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" Style="width:100%;">
+                            <MudTextField T="string" @bind-Value="searchString" Style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                            <MudTooltip Text="Agregar Producto">
+                                <MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionProducto(maxWidth, "Insertar", 0))" />
+                            </MudTooltip>
+                        </MudStack>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Acciones</MudTh>
+                        <MudTh Style="text-align:left;">Código</MudTh>
+                        <MudTh Style="text-align:left;">Descripción</MudTh>
+                        <MudTh Style="text-align:left;">Categoría</MudTh>
+                        <MudTh Style="text-align:left;">Modelo</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Class="d-inline-flex justify-center">
+                            <MudTooltip Text="Ver Producto">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionProducto(maxWidth, "Ver", @context.ID_Productos))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Editar Producto">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionProducto(maxWidth, "Editar", @context.ID_Productos))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Eliminar Producto">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@((e) => AccionProducto(maxWidth, "Eliminar", @context.ID_Productos))" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd DataLabel="Codigo">@context.Codigo</MudTd>
+                        <MudTd DataLabel="Descripcion">@context.Descripcion</MudTd>
+                        <MudTd DataLabel="Categoria">@context.Categoria</MudTd>
+                        <MudTd DataLabel="Modelo">@context.Modelo</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudTable<ProductoListDto> table;
+    private string searchString = "";
+    private string infoFormat = "{first_item}-{last_item} de {all_items}";
+    private bool Cargando = true;
+
+    private List<ProductoListDto> lstProductos = new();
+    private Dictionary<decimal, string> categoriaLookup = new();
+    private Dictionary<decimal, string> modeloLookup = new();
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+
+    private DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        categoriaLookup = await Context.CategoriasProductos.AsNoTracking()
+            .ToDictionaryAsync(c => c.ID_CategoriasPro, c => c.NombreCatProductos);
+        modeloLookup = await Context.Modelos.AsNoTracking()
+            .ToDictionaryAsync(m => m.ID_Modelos, m => m.NombreModelos);
+
+        lstProductos = await Context.Productos.AsNoTracking()
+            .OrderBy(p => p.Descripcion)
+            .Select(p => new ProductoListDto
+            {
+                ID_Productos = p.ID_Productos,
+                Codigo = p.Codigo,
+                Descripcion = p.Descripcion,
+                ID_CategoriaProFK = p.ID_CategoriaProFK,
+                ID_ModelosFK = p.ID_ModelosFK
+            })
+            .ToListAsync();
+
+        foreach (var item in lstProductos)
+        {
+            item.Categoria = categoriaLookup.ContainsKey(item.ID_CategoriaProFK)
+                ? categoriaLookup[item.ID_CategoriaProFK]
+                : "";
+            item.Modelo = modeloLookup.ContainsKey(item.ID_ModelosFK)
+                ? modeloLookup[item.ID_ModelosFK]
+                : "";
+        }
+    }
+
+    private bool FilterFunc1(ProductoListDto element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(ProductoListDto element, string search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return true;
+        if (element.Codigo.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Descripcion.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Categoria.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Modelo.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task AccionProducto(DialogOptions options, string modo, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", modo },
+            { "ID", id }
+        };
+        var dialog = DialogService.Show<D_Producto>(modo.ToUpper() + " PRODUCTO", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarDatos();
+            StateHasChanged();
+        }
+    }
+
+    public class ProductoListDto
+    {
+        public decimal ID_Productos { get; set; }
+        public string Codigo { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public decimal ID_CategoriaProFK { get; set; }
+        public decimal ID_ModelosFK { get; set; }
+        public string Categoria { get; set; } = "";
+        public string Modelo { get; set; } = "";
+    }
+}

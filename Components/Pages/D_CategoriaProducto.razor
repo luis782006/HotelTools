@@ -9,30 +9,9 @@
             <MudGrid>
                 <MudItem xs="12">
                     <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
-                        @bind-Value="habitacion.DescripcionHab" Label="Descripción Habitación"
-                        ReadOnly="@SoloLectura" Required="true"
-                        RequiredError="La descripción es requerida" />
-                </MudItem>
-                <MudItem xs="12">
-                    <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="habitacion.ID_CategoriasFK"
-                        Variant="Variant.Outlined" Label="Categoría" ReadOnly="@SoloLectura" Required="true"
-                        RequiredError="Debe seleccionar una categoría">
-                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
-                        @foreach (var c in categorias)
-                        {
-                            <MudSelectItem Value="c.ID_Categoria">@c.TipoHab</MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="6">
-                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="int"
-                        @bind-Value="habitacion.MaxPersonas" Label="Max Personas"
-                        ReadOnly="@SoloLectura" Required="true"
-                        RequiredError="El máximo de personas es requerido" />
-                </MudItem>
-                <MudItem xs="6" Class="d-flex align-items-center">
-                    <MudCheckBox T="bool" @bind-Value="habitacion.Estado" Color="Color.Primary"
-                        Label="Activo" ReadOnly="@SoloLectura" />
+                        @bind-Value="categoria.NombreCatProductos" Label="Nombre de la Categoría"
+                        ReadOnly="@SoloLectura" Required="true" MaxLength="60"
+                        RequiredError="El nombre de la categoría es requerido" />
                 </MudItem>
             </MudGrid>
         </MudForm>
@@ -52,8 +31,7 @@
         }
         @if (Modo != "Ver" && Modo != "Eliminar")
         {
-            <MudButton OnClick="ConfirmarGuardar"
-                Disabled="!success || habitacion.ID_CategoriasFK == 0m"
+            <MudButton OnClick="ConfirmarGuardar" Disabled="!success"
                 Color="Color.Success" Variant="Variant.Filled"
                 StartIcon="@Icons.Material.Filled.Save">
                 Guardar
@@ -71,20 +49,18 @@
     private bool success = true;
     private string[] errors = { };
 
-    private Habitacion habitacion = new() { Estado = true };
+    private CategoriaProducto categoria = new();
     private MudForm? form;
-    private List<CategoriaHabitacion> categorias = new();
 
     protected override async Task OnInitializedAsync()
     {
         SoloLectura = Modo == "Ver" || Modo == "Eliminar";
-        categorias = await Context.CategoriaHabitaciones.AsNoTracking().OrderBy(c => c.TipoHab).ToListAsync();
 
         if (ID > 0)
         {
-            var h = await Context.Habitaciones.FindAsync(ID);
-            if (h != null)
-                habitacion = h;
+            var c = await Context.CategoriasProductos.FindAsync(ID);
+            if (c != null)
+                categoria = c;
         }
     }
 
@@ -95,6 +71,22 @@
             form?.Validate();
             StateHasChanged();
         }
+    }
+
+    private void MostrarError(Exception ex, string accion)
+    {
+        var inner = ex.InnerException?.Message ?? ex.Message;
+        var esViolacionFK = inner.Contains("REFERENCE", StringComparison.OrdinalIgnoreCase)
+            || inner.Contains("constraint", StringComparison.OrdinalIgnoreCase);
+        Snackbar.Add(
+            esViolacionFK
+                ? (accion == "eliminar"
+                    ? "No se puede eliminar el registro porque está asociado a otros registros."
+                    : "No se pudo guardar el registro porque ya está asociado a otros registros.")
+                : (accion == "eliminar"
+                    ? "No se pudo eliminar el registro. Intente nuevamente."
+                    : "No se pudo guardar el registro. Verifique los datos e intente nuevamente."),
+            Severity.Error);
     }
 
     private async Task ConfirmarGuardar()
@@ -115,32 +107,25 @@
     {
         try
         {
-            if (habitacion.ID_CategoriasFK == 0m)
-            {
-                Snackbar.Add("Debe seleccionar una categoría", Severity.Error);
-                return;
-            }
-
             if (Modo == "Insertar")
             {
-                Context.Habitaciones.Add(habitacion);
+                Context.CategoriasProductos.Add(categoria);
             }
             else
             {
-                Context.Habitaciones.Update(habitacion);
+                Context.CategoriasProductos.Update(categoria);
             }
 
             await Context.SaveChangesAsync();
 
             Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
-            Snackbar.Add(Modo == "Insertar" ? "Habitación creada correctamente" : "Habitación actualizada correctamente", Severity.Success);
+            Snackbar.Add(Modo == "Insertar" ? "Categoría creada correctamente" : "Categoría actualizada correctamente", Severity.Success);
 
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
         {
-            var msg = ex.InnerException?.Message ?? ex.Message;
-            Snackbar.Add($"Error al guardar: {msg}", Severity.Error);
+            MostrarError(ex, "guardar");
         }
     }
 
@@ -148,7 +133,7 @@
     {
         var confirm = await DialogService.ShowMessageBox(
             "Confirmar Eliminación",
-            "¿Está seguro de eliminar esta habitación?",
+            "¿Está seguro de eliminar esta categoría?",
             yesText: "Eliminar",
             cancelText: "Cancelar");
 
@@ -162,17 +147,17 @@
     {
         try
         {
-            Context.Habitaciones.Remove(habitacion);
+            Context.CategoriasProductos.Remove(categoria);
             await Context.SaveChangesAsync();
 
             Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
-            Snackbar.Add("Habitación eliminada correctamente", Severity.Success);
+            Snackbar.Add("Categoría eliminada correctamente", Severity.Success);
 
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al eliminar: {ex.Message}", Severity.Error);
+            MostrarError(ex, "eliminar");
         }
     }
 
