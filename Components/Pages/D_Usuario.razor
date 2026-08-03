@@ -24,6 +24,7 @@
                     <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="empleado.ID_Cargo"
                         ReadOnly="@SoloLectura" Variant="Variant.Outlined" Label="Cargo" Required="true"
                         RequiredError="Debe seleccionar un cargo">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
                         @foreach (var c in cargos)
                         {
                             <MudSelectItem Value="c.ID_Cargo">@c.NombreCargo</MudSelectItem>
@@ -34,6 +35,7 @@
                     <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="empleado.ID_Departamento"
                         ReadOnly="@SoloLectura" Variant="Variant.Outlined" Label="Departamento" Required="true"
                         RequiredError="Debe seleccionar un departamento">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
                         @foreach (var d in departamentos)
                         {
                             <MudSelectItem Value="d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
@@ -44,6 +46,7 @@
                     <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="empleado.ID_Rol"
                         ReadOnly="@SoloLectura" Variant="Variant.Outlined" Label="Rol" Required="true"
                         RequiredError="Debe seleccionar un rol">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
                         @foreach (var r in roles)
                         {
                             <MudSelectItem Value="r.ID_Rol">@r.NombreRol</MudSelectItem>
@@ -85,6 +88,7 @@
         @if (Modo != "Ver")
         {
             <MudButton OnClick="ConfirmarGuardar"
+                Disabled="!success || empleado.ID_Cargo == 0m || empleado.ID_Departamento == 0m || empleado.ID_Rol == 0m"
                 Color="Color.Success" Variant="Variant.Filled"
                 StartIcon="@Icons.Material.Filled.Save">
                 Guardar
@@ -135,6 +139,15 @@
         passwordModificada = false;
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Modo != "Ver")
+        {
+            form?.Validate();
+            StateHasChanged();
+        }
+    }
+
     private async Task ConfirmarGuardar()
     {
         var confirm = await DialogService.ShowMessageBox(
@@ -153,6 +166,22 @@
     {
         try
         {
+            if (empleado.ID_Cargo == 0m)
+            {
+                Snackbar.Add("Debe seleccionar un cargo", Severity.Error);
+                return;
+            }
+            if (empleado.ID_Departamento == 0m)
+            {
+                Snackbar.Add("Debe seleccionar un departamento", Severity.Error);
+                return;
+            }
+            if (empleado.ID_Rol == 0m)
+            {
+                Snackbar.Add("Debe seleccionar un rol", Severity.Error);
+                return;
+            }
+
             empleado.Activo = esActivo ? (byte)1 : (byte)0;
             empleado.Nombre = empleado.Nombre.Trim();
             empleado.Apellido = empleado.Apellido.Trim();
@@ -166,14 +195,20 @@
             await Context.SaveChangesAsync();
 
             Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
-            Snackbar.Add("Usuario actualizado correctamente", Severity.Success);
+            Snackbar.Add(Modo == "Insertar" ? "Usuario creado correctamente" : "Usuario actualizado correctamente", Severity.Success);
 
             MudDialog.Close(DialogResult.Ok(true));
-            Snackbar.Add("Usuario actualizado correctamente", Severity.Success);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error al guardar: {ex.Message}", Severity.Error);
+            var inner = ex.InnerException?.Message ?? ex.Message;
+            var esViolacionFK = inner.Contains("REFERENCE", StringComparison.OrdinalIgnoreCase)
+                || inner.Contains("constraint", StringComparison.OrdinalIgnoreCase);
+            Snackbar.Add(
+                esViolacionFK
+                    ? "No se pudo guardar el registro porque ya está asociado a otros registros."
+                    : "No se pudo guardar el registro. Verifique los datos e intente nuevamente.",
+                Severity.Error);
         }
     }
 

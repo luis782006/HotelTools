@@ -8,26 +8,43 @@
         <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
             <MudGrid>
                 <MudItem xs="12">
-                    <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="proveedor.ID_RazonSocialFK"
-                        Variant="Variant.Outlined" Label="Razón Social" ReadOnly="@SoloLectura" Required="true"
-                        RequiredError="Debe seleccionar una razón social">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="producto.Codigo" Label="Código"
+                        ReadOnly="@SoloLectura" Required="true" MaxLength="80"
+                        RequiredError="El código es requerido" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="producto.Descripcion" Label="Descripción"
+                        ReadOnly="@SoloLectura" Required="true" MaxLength="60"
+                        RequiredError="La descripción es requerida" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect T="decimal" @bind-Value="producto.ID_CategoriaProFK" Margin="Margin.Dense"
+                        Variant="Variant.Outlined" Label="Categoría" Disabled="@SoloLectura"
+                        Required="true" RequiredError="Seleccione una categoría">
                         <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
-                        @foreach (var r in razonesSociales)
+                        @foreach (var c in lstCategorias)
                         {
-                            <MudSelectItem Value="r.ID_RazonSocial">@r.Nombre</MudSelectItem>
+                            <MudSelectItem T="decimal" Value="@c.ID_CategoriasPro">@c.NombreCatProductos</MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12">
-                    <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="proveedor.ID_RepresentanteFK"
-                        Variant="Variant.Outlined" Label="Representante" ReadOnly="@SoloLectura" Required="true"
-                        RequiredError="Debe seleccionar un representante">
+                    <MudSelect T="decimal" @bind-Value="producto.ID_ModelosFK" Margin="Margin.Dense"
+                        Variant="Variant.Outlined" Label="Modelo" Disabled="@SoloLectura"
+                        Required="true" RequiredError="Seleccione un modelo">
                         <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
-                        @foreach (var r in representantes)
+                        @foreach (var m in lstModelos)
                         {
-                            <MudSelectItem Value="r.ID_Representante">@r.Nombre</MudSelectItem>
+                            <MudSelectItem T="decimal" Value="@m.ID_Modelos">@m.NombreModelos</MudSelectItem>
                         }
                     </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="nroFacturaStr" Label="Nro. Factura (opcional)"
+                        ReadOnly="@SoloLectura" Placeholder="Nro de Fact" />
                 </MudItem>
             </MudGrid>
         </MudForm>
@@ -47,8 +64,7 @@
         }
         @if (Modo != "Ver" && Modo != "Eliminar")
         {
-            <MudButton OnClick="ConfirmarGuardar"
-                Disabled="!success || proveedor.ID_RazonSocialFK == 0m || proveedor.ID_RepresentanteFK == 0m"
+            <MudButton OnClick="ConfirmarGuardar" Disabled="!success || producto.ID_CategoriaProFK == 0m || producto.ID_ModelosFK == 0m"
                 Color="Color.Success" Variant="Variant.Filled"
                 StartIcon="@Icons.Material.Filled.Save">
                 Guardar
@@ -66,22 +82,32 @@
     private bool success = true;
     private string[] errors = { };
 
-    private Proveedor proveedor = new();
+    private Producto producto = new();
     private MudForm? form;
-    private List<RazonSocial> razonesSociales = new();
-    private List<Representante> representantes = new();
+    private string nroFacturaStr = "";
+
+    private List<CategoriaProducto> lstCategorias = new();
+    private List<Modelo> lstModelos = new();
 
     protected override async Task OnInitializedAsync()
     {
         SoloLectura = Modo == "Ver" || Modo == "Eliminar";
-        razonesSociales = await Context.RazonSociales.AsNoTracking().OrderBy(r => r.Nombre).ToListAsync();
-        representantes = await Context.Representantes.AsNoTracking().OrderBy(r => r.Nombre).ToListAsync();
+
+        lstCategorias = await Context.CategoriasProductos.AsNoTracking()
+            .OrderBy(c => c.NombreCatProductos)
+            .ToListAsync();
+        lstModelos = await Context.Modelos.AsNoTracking()
+            .OrderBy(m => m.NombreModelos)
+            .ToListAsync();
 
         if (ID > 0)
         {
-            var p = await Context.Proveedores.FindAsync(ID);
+            var p = await Context.Productos.FindAsync(ID);
             if (p != null)
-                proveedor = p;
+            {
+                producto = p;
+                nroFacturaStr = producto.ID_NroFacturaFK?.ToString() ?? "";
+            }
         }
     }
 
@@ -128,30 +154,35 @@
     {
         try
         {
-            if (proveedor.ID_RazonSocialFK == 0m)
+            if (producto.ID_CategoriaProFK == 0m)
             {
-                Snackbar.Add("Debe seleccionar una razón social", Severity.Error);
+                Snackbar.Add("Debe seleccionar una categoría", Severity.Error);
                 return;
             }
-            if (proveedor.ID_RepresentanteFK == 0m)
+            if (producto.ID_ModelosFK == 0m)
             {
-                Snackbar.Add("Debe seleccionar un representante", Severity.Error);
+                Snackbar.Add("Debe seleccionar un modelo", Severity.Error);
                 return;
             }
 
+            if (!string.IsNullOrWhiteSpace(nroFacturaStr) && decimal.TryParse(nroFacturaStr, out var nf))
+                producto.ID_NroFacturaFK = nf;
+            else
+                producto.ID_NroFacturaFK = null;
+
             if (Modo == "Insertar")
             {
-                Context.Proveedores.Add(proveedor);
+                Context.Productos.Add(producto);
             }
             else
             {
-                Context.Proveedores.Update(proveedor);
+                Context.Productos.Update(producto);
             }
 
             await Context.SaveChangesAsync();
 
             Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
-            Snackbar.Add(Modo == "Insertar" ? "Proveedor creado correctamente" : "Proveedor actualizado correctamente", Severity.Success);
+            Snackbar.Add(Modo == "Insertar" ? "Producto creado correctamente" : "Producto actualizado correctamente", Severity.Success);
 
             MudDialog.Close(DialogResult.Ok(true));
         }
@@ -165,7 +196,7 @@
     {
         var confirm = await DialogService.ShowMessageBox(
             "Confirmar Eliminación",
-            "¿Está seguro de eliminar este proveedor?",
+            "¿Está seguro de eliminar este producto?",
             yesText: "Eliminar",
             cancelText: "Cancelar");
 
@@ -179,11 +210,11 @@
     {
         try
         {
-            Context.Proveedores.Remove(proveedor);
+            Context.Productos.Remove(producto);
             await Context.SaveChangesAsync();
 
             Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
-            Snackbar.Add("Proveedor eliminado correctamente", Severity.Success);
+            Snackbar.Add("Producto eliminado correctamente", Severity.Success);
 
             MudDialog.Close(DialogResult.Ok(true));
         }

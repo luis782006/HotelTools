@@ -24,9 +24,10 @@
         @if (Modo != "Ver")
         {
             <MudButton OnClick="ConfirmarGuardar"
+                Disabled="!success"
                 Color="Color.Success" Variant="Variant.Filled"
                 StartIcon="@Icons.Material.Filled.Save">
-                @(Modo == "Insertar" ? "Guardar" : "Guardar")
+                Guardar
             </MudButton>
         }
     </DialogActions>
@@ -53,6 +54,15 @@
             var r = await Context.Rol.FindAsync(ID);
             if (r != null)
                 rol = r;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Modo != "Ver")
+        {
+            form?.Validate();
+            StateHasChanged();
         }
     }
 

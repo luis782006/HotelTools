@@ -1,0 +1,126 @@
+@page "/listamodelos"
+@attribute [Authorize(Policy = "ManageInventario")]
+
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ManageInventario" Objeto="ListaModelos" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4">Listado de Modelos</MudText>
+    <MudPaper Class="d-flex justify-content-center p-4" Width="100%">
+        <MudPaper Style="width:80rem;">
+            @if (Cargando)
+            {
+                <MudGrid Style="text-align:center;">
+                    <MudItem sm="12">
+                        <MudText Typo="Typo.h6">Cargando registros...</MudText>
+                        <MudProgressCircular Color="Color.Primary" Style="height:70px;width:70px;" Indeterminate="true" />
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudTable Items="@lstModelos" Breakpoint="Breakpoint.Md" Style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<ModeloListDto,bool>(FilterFunc1)">
+                    <ToolBarContent>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" Style="width:100%;">
+                            <MudTextField T="string" @bind-Value="searchString" Style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                            <MudTooltip Text="Agregar Modelo">
+                                <MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionModelo(maxWidth, "Insertar", 0))" />
+                            </MudTooltip>
+                        </MudStack>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Acciones</MudTh>
+                        <MudTh Style="text-align:left;">Nombre del Modelo</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Class="d-inline-flex justify-center">
+                            <MudTooltip Text="Ver Modelo">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionModelo(maxWidth, "Ver", @context.ID_Modelos))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Editar Modelo">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionModelo(maxWidth, "Editar", @context.ID_Modelos))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Eliminar Modelo">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@((e) => AccionModelo(maxWidth, "Eliminar", @context.ID_Modelos))" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd DataLabel="Nombre">@context.NombreModelos</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudTable<ModeloListDto> table;
+    private string searchString = "";
+    private string infoFormat = "{first_item}-{last_item} de {all_items}";
+    private bool Cargando = true;
+
+    private List<ModeloListDto> lstModelos = new();
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+
+    private DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        lstModelos = await Context.Modelos.AsNoTracking()
+            .OrderBy(m => m.NombreModelos)
+            .Select(m => new ModeloListDto
+            {
+                ID_Modelos = m.ID_Modelos,
+                NombreModelos = m.NombreModelos
+            })
+            .ToListAsync();
+    }
+
+    private bool FilterFunc1(ModeloListDto element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(ModeloListDto element, string search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return true;
+        if (element.NombreModelos.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task AccionModelo(DialogOptions options, string modo, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", modo },
+            { "ID", id }
+        };
+        var dialog = DialogService.Show<D_Modelo>(modo.ToUpper() + " MODELO", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarDatos();
+            StateHasChanged();
+        }
+    }
+
+    public class ModeloListDto
+    {
+        public decimal ID_Modelos { get; set; }
+        public string NombreModelos { get; set; } = "";
+    }
+}
