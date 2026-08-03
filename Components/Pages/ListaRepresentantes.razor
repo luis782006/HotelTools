@@ -1,0 +1,136 @@
+@page "/listarepresentantes"
+@attribute [Authorize(Policy = "ManageProveedores")]
+
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ManageProveedores" Objeto="ListaRepresentantes" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4">Listado de Representantes</MudText>
+    <MudPaper Class="d-flex justify-content-center p-4" Width="100%">
+        <MudPaper Style="width:80rem;">
+            @if (Cargando)
+            {
+                <MudGrid Style="text-align:center;">
+                    <MudItem sm="12">
+                        <MudText Typo="Typo.h6">Cargando registros...</MudText>
+                        <MudProgressCircular Color="Color.Primary" Style="height:70px;width:70px;" Indeterminate="true" />
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudTable Items="@lstRepresentantes" Breakpoint="Breakpoint.Md" Style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<RepresentanteListDto,bool>(FilterFunc1)">
+                    <ToolBarContent>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" Style="width:100%;">
+                            <MudTextField T="string" @bind-Value="searchString" Style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                            <MudTooltip Text="Agregar Representante">
+                                <MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionRepresentante(maxWidth, "Insertar", 0))" />
+                            </MudTooltip>
+                        </MudStack>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Acciones</MudTh>
+                        <MudTh Style="text-align:left;">Nombre</MudTh>
+                        <MudTh Style="text-align:left;">Teléfono Celular</MudTh>
+                        <MudTh Style="text-align:left;">Email</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Class="d-inline-flex justify-center">
+                            <MudTooltip Text="Ver Representante">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionRepresentante(maxWidth, "Ver", @context.ID_Representante))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Editar Representante">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionRepresentante(maxWidth, "Editar", @context.ID_Representante))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Eliminar Representante">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@((e) => AccionRepresentante(maxWidth, "Eliminar", @context.ID_Representante))" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                        <MudTd DataLabel="Telefono">@context.TelefonoCelular</MudTd>
+                        <MudTd DataLabel="Email">@context.Email</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudTable<RepresentanteListDto> table;
+    private string searchString = "";
+    private string infoFormat = "{first_item}-{last_item} de {all_items}";
+    private bool Cargando = true;
+
+    private List<RepresentanteListDto> lstRepresentantes = new();
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+
+    private DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        lstRepresentantes = await Context.Representantes.AsNoTracking()
+            .OrderBy(r => r.Nombre)
+            .Select(r => new RepresentanteListDto
+            {
+                ID_Representante = r.ID_Representante,
+                Nombre = r.Nombre,
+                TelefonoCelular = r.TelefonoCelular,
+                Email = r.Email
+            })
+            .ToListAsync();
+    }
+
+    private bool FilterFunc1(RepresentanteListDto element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(RepresentanteListDto element, string search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return true;
+        if (element.Nombre.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Email.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task AccionRepresentante(DialogOptions options, string modo, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", modo },
+            { "ID", id }
+        };
+        var dialog = DialogService.Show<D_Representante>(modo.ToUpper() + " REPRESENTANTE", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarDatos();
+            StateHasChanged();
+        }
+    }
+
+    public class RepresentanteListDto
+    {
+        public decimal ID_Representante { get; set; }
+        public string Nombre { get; set; } = "";
+        public string TelefonoCelular { get; set; } = "";
+        public string Email { get; set; } = "";
+    }
+}

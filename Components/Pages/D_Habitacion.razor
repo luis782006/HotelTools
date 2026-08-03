@@ -1,0 +1,170 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="habitacion.DescripcionHab" Label="Descripción Habitación"
+                        ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="La descripción es requerida" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="habitacion.ID_CategoriasFK"
+                        Variant="Variant.Outlined" Label="Categoría" ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="Debe seleccionar una categoría">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                        @foreach (var c in categorias)
+                        {
+                            <MudSelectItem Value="c.ID_Categoria">@c.TipoHab</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="int"
+                        @bind-Value="habitacion.MaxPersonas" Label="Max Personas"
+                        ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="El máximo de personas es requerido" />
+                </MudItem>
+                <MudItem xs="6" Class="d-flex align-items-center">
+                    <MudCheckBox T="bool" @bind-Value="habitacion.Estado" Color="Color.Primary"
+                        Label="Activo" ReadOnly="@SoloLectura" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo == "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarEliminar"
+                Color="Color.Error" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Delete">
+                Eliminar
+            </MudButton>
+        }
+        @if (Modo != "Ver" && Modo != "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarGuardar"
+                Color="Color.Success" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Save">
+                Guardar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+
+    private bool SoloLectura;
+    private bool success = true;
+    private string[] errors = { };
+
+    private Habitacion habitacion = new() { Estado = true };
+    private MudForm? form;
+    private List<CategoriaHabitacion> categorias = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver" || Modo == "Eliminar";
+        categorias = await Context.CategoriaHabitaciones.AsNoTracking().OrderBy(c => c.TipoHab).ToListAsync();
+
+        if (ID > 0)
+        {
+            var h = await Context.Habitaciones.FindAsync(ID);
+            if (h != null)
+                habitacion = h;
+        }
+    }
+
+    private async Task ConfirmarGuardar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea guardar los cambios?",
+            yesText: "Guardar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Guardar();
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (habitacion.ID_CategoriasFK == 0m)
+            {
+                Snackbar.Add("Debe seleccionar una categoría", Severity.Error);
+                return;
+            }
+
+            if (Modo == "Insertar")
+            {
+                Context.Habitaciones.Add(habitacion);
+            }
+            else
+            {
+                Context.Habitaciones.Update(habitacion);
+            }
+
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add(Modo == "Insertar" ? "Habitación creada correctamente" : "Habitación actualizada correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            Snackbar.Add($"Error al guardar: {msg}", Severity.Error);
+        }
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar Eliminación",
+            "¿Está seguro de eliminar esta habitación?",
+            yesText: "Eliminar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Eliminar();
+        }
+    }
+
+    private async Task Eliminar()
+    {
+        try
+        {
+            Context.Habitaciones.Remove(habitacion);
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Habitación eliminada correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al eliminar: {ex.Message}", Severity.Error);
+        }
+    }
+
+    void Cancelar() => MudDialog.Cancel();
+}

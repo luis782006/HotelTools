@@ -28,6 +28,10 @@ namespace HotelTools.Models
         public virtual DbSet<RolPermiso> RolPermisos { get; set; }
         public virtual DbSet<Departamento> Departamentos { get; set; }
         public virtual DbSet<CategoriaHabitacion> CategoriaHabitaciones { get; set; }
+        public virtual DbSet<Habitacion> Habitaciones { get; set; }
+        public virtual DbSet<Proveedor> Proveedores { get; set; }
+        public virtual DbSet<RazonSocial> RazonSociales { get; set; }
+        public virtual DbSet<Representante> Representantes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -89,6 +93,44 @@ namespace HotelTools.Models
                 entity.Property(e => e.ID_Categoria).ValueGeneratedOnAdd();
                 entity.Property(e => e.TipoHab).HasMaxLength(20);
                 entity.ToTable("Categorias", "Inventarios");
+            });
+
+            modelBuilder.Entity<Habitacion>(entity =>
+            {
+                entity.HasKey(c => c.ID_NroHab);
+                entity.Property(e => e.ID_NroHab).ValueGeneratedOnAdd();
+                entity.Property(e => e.DescripcionHab).HasMaxLength(20);
+                entity.ToTable("Habitaciones", "General");
+            });
+
+            modelBuilder.Entity<Proveedor>(entity =>
+            {
+                entity.HasKey(c => c.ID_Proveedor);
+                entity.Property(e => e.ID_Proveedor).ValueGeneratedOnAdd();
+                entity.ToTable("Proveedores", "Inventarios");
+            });
+
+            modelBuilder.Entity<RazonSocial>(entity =>
+            {
+                entity.HasKey(c => c.ID_RazonSocial);
+                entity.Property(e => e.ID_RazonSocial).ValueGeneratedOnAdd();
+                entity.Property(e => e.Nombre).HasMaxLength(100);
+                entity.Property(e => e.DireccionFisica).HasMaxLength(150);
+                entity.Property(e => e.DireccionDigital).HasMaxLength(150);
+                entity.Property(e => e.TelefonoFijo).HasMaxLength(30);
+                entity.Property(e => e.TelefonoCelular).HasMaxLength(30);
+                entity.Property(e => e.Email).HasMaxLength(100);
+                entity.ToTable("RazonSocial", "Inventarios");
+            });
+
+            modelBuilder.Entity<Representante>(entity =>
+            {
+                entity.HasKey(c => c.ID_Representante);
+                entity.Property(e => e.ID_Representante).ValueGeneratedOnAdd();
+                entity.Property(e => e.Nombre).HasMaxLength(100);
+                entity.Property(e => e.TelefonoCelular).HasMaxLength(30);
+                entity.Property(e => e.Email).HasMaxLength(100);
+                entity.ToTable("Representante", "Inventarios");
             });
         }
     }
