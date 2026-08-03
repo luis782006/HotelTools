@@ -1,0 +1,393 @@
+@page "/cargamasivahabitaciones"
+@attribute [Authorize(Policy = "ManageConfiguraciones")]
+
+@using OfficeOpenXml
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ManageConfiguraciones" Objeto="GestionHabitaciones" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4">Gestión de Habitaciones</MudText>
+    <MudTabs @bind-ActivePanelIndex="tabIndex" Elevation="0" Rounded="true" Border="true" Class="mt-4">
+        <MudTabPanel Text="Listado" Icon="@Icons.Material.Filled.List">
+            <MudPaper Class="pa-4 mt-4" Width="100%">
+                @if (Cargando)
+                {
+                    <MudGrid Style="text-align:center;">
+                        <MudItem sm="12">
+                            <MudText Typo="Typo.h6">Cargando registros...</MudText>
+                            <MudProgressCircular Color="Color.Primary" Style="height:70px;width:70px;" Indeterminate="true" />
+                        </MudItem>
+                    </MudGrid>
+                }
+                else
+                {
+                    <MudTable Items="@lstHabitaciones" Breakpoint="Breakpoint.Md" Style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<HabitacionListDto,bool>(FilterFunc1)">
+                        <ToolBarContent>
+                            <MudStack Row="true" Justify="Justify.SpaceBetween" Style="width:100%;">
+                                <MudTextField T="string" @bind-Value="searchString" Style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                                <MudTooltip Text="Agregar Habitación">
+                                    <MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionHabitacion(maxWidth, "Insertar", 0))" />
+                                </MudTooltip>
+                            </MudStack>
+                        </ToolBarContent>
+                        <HeaderContent>
+                            <MudTh>Acciones</MudTh>
+                            <MudTh Style="text-align:left;">Habitación</MudTh>
+                            <MudTh Style="text-align:left;">Categoría</MudTh>
+                            <MudTh Style="text-align:left;">Max Personas</MudTh>
+                            <MudTh Style="text-align:left;">Estado</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd Class="d-inline-flex justify-center">
+                                <MudTooltip Text="Ver Habitación">
+                                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionHabitacion(maxWidth, "Ver", @context.ID_NroHab))" />
+                                </MudTooltip>
+                                <MudTooltip Text="Editar Habitación">
+                                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionHabitacion(maxWidth, "Editar", @context.ID_NroHab))" />
+                                </MudTooltip>
+                                <MudTooltip Text="Eliminar Habitación">
+                                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@((e) => AccionHabitacion(maxWidth, "Eliminar", @context.ID_NroHab))" />
+                                </MudTooltip>
+                            </MudTd>
+                            <MudTd DataLabel="Habitacion">@context.DescripcionHab</MudTd>
+                            <MudTd DataLabel="Categoria">@context.Categoria</MudTd>
+                            <MudTd DataLabel="MaxPersonas">@context.MaxPersonas</MudTd>
+                            <MudTd DataLabel="Estado">
+                                <MudText Color="@(context.Estado ? Color.Success : Color.Error)">
+                                    @(context.Estado ? "Activo" : "Inactivo")
+                                </MudText>
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
+                        </PagerContent>
+                    </MudTable>
+                }
+            </MudPaper>
+        </MudTabPanel>
+
+
+
+        <MudTabPanel Text="Carga Masiva (Excel)" Icon="@Icons.Material.Filled.UploadFile">
+            <MudPaper Class="pa-6 mt-4">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                    <MudButton OnClick="DescargarTemplate" Variant="Variant.Outlined" Color="Color.Info">
+                        <MudIcon Icon="@Icons.Material.Filled.Download" Class="mr-2" /> Descargar Template
+                    </MudButton>
+                    <InputFile OnChange="@OnFilesSelected" accept=".xlsx" />
+                </MudStack>
+
+                @if (!string.IsNullOrEmpty(nombreArchivo))
+                {
+                    <MudText Class="mt-3 mud-text-secondary">Archivo: @nombreArchivo</MudText>
+                }
+
+                @if (filasImport.Count > 0)
+                {
+                    <MudText Typo="Typo.h6" Class="mt-4">Vista previa (@filasImport.Count registros)</MudText>
+                    <MudTable Items="filasImport" Dense="true" Hover="true" Class="mt-2" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Fila</MudTh>
+                            <MudTh>Descripción Habitación</MudTh>
+                            <MudTh>Categoría</MudTh>
+                            <MudTh>Max Personas</MudTh>
+                            <MudTh>Estado</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Fila">@context.RowNumber</MudTd>
+                            <MudTd DataLabel="Habitacion">@context.DescripcionHab</MudTd>
+                            <MudTd DataLabel="Categoria">@context.Categoria</MudTd>
+                            <MudTd DataLabel="MaxPersonas">@context.MaxPersonas</MudTd>
+                            <MudTd DataLabel="Estado">
+                                @if (context.Errores.Count > 0)
+                                {
+                                    <MudText Color="Color.Error" Class="mud-text-small">@string.Join("; ", context.Errores)</MudText>
+                                }
+                                else
+                                {
+                                    <MudText Color="Color.Success">Válido</MudText>
+                                }
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+
+                    <MudText Class="mt-2">
+                        @filasImport.Count(r => r.Valido) válidos, @filasImport.Count(r => !r.Valido) con errores
+                    </MudText>
+
+                    <MudButton OnClick="ImportarHabitaciones" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4"
+                        Disabled="importando || filasImport.Count(r => r.Valido) == 0">
+                        Importar Habitaciones
+                    </MudButton>
+                }
+                    @if (importoExito)
+                    {
+                        <MudAlert Severity="Severity.Success" Class="mt-3" Variant="Variant.Outlined">@mensajeExito</MudAlert>
+                    }
+                    @if (importoError)
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mt-3" Variant="Variant.Outlined">@mensajeError</MudAlert>
+                    }
+            </MudPaper>
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private int tabIndex;
+
+    // Listado
+    private MudTable<HabitacionListDto> table;
+    private string searchString = "";
+    private string infoFormat = "{first_item}-{last_item} de {all_items}";
+    private bool Cargando = true;
+    private List<HabitacionListDto> lstHabitaciones = new();
+    private Dictionary<decimal, string> categoriaLookup = new();
+
+    // Carga Masiva
+    private bool importando, importoExito, importoError;
+    private string nombreArchivo = "", mensajeExito = "", mensajeError = "";
+    private List<HabitacionImportRow> filasImport = new();
+    private List<CategoriaHabitacion> categorias = new();
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+    [Inject] private IJSRuntime Js { get; set; }
+    [Inject] private ISnackbar Snackbar { get; set; }
+
+    private DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        categorias = await Context.CategoriaHabitaciones.AsNoTracking().OrderBy(c => c.TipoHab).ToListAsync();
+        categoriaLookup = categorias.ToDictionary(c => c.ID_Categoria, c => c.TipoHab);
+        await CargarListado();
+    }
+
+    // ===================== LISTADO =====================
+
+    private async Task CargarListado()
+    {
+        Cargando = true;
+        var habitaciones = await Context.Habitaciones.AsNoTracking().OrderBy(h => h.DescripcionHab).ToListAsync();
+        lstHabitaciones = habitaciones.Select(h => new HabitacionListDto
+        {
+            ID_NroHab = h.ID_NroHab,
+            DescripcionHab = h.DescripcionHab,
+            Categoria = categoriaLookup.ContainsKey(h.ID_CategoriasFK) ? categoriaLookup[h.ID_CategoriasFK] : "",
+            MaxPersonas = h.MaxPersonas,
+            Estado = h.Estado
+        }).ToList();
+        Cargando = false;
+    }
+
+    private bool FilterFunc1(HabitacionListDto element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(HabitacionListDto element, string search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return true;
+        if (element.DescripcionHab.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Categoria.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task AccionHabitacion(DialogOptions options, string modo, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", modo },
+            { "ID", id }
+        };
+        var dialog = DialogService.Show<D_Habitacion>(modo.ToUpper() + " HABITACIÓN", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarListado();
+            StateHasChanged();
+        }
+    }
+
+    // ===================== CARGA MASIVA =====================
+
+    private async Task OnFilesSelected(InputFileChangeEventArgs e)
+    {
+        filasImport.Clear();
+        nombreArchivo = "";
+        importoExito = false;
+        importoError = false;
+
+        var file = e.File;
+        if (file == null) return;
+
+        nombreArchivo = file.Name;
+
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+        using var stream = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(stream);
+        stream.Position = 0;
+
+        using var package = new ExcelPackage(stream);
+        var worksheet = package.Workbook.Worksheets[0];
+        if (worksheet == null)
+        {
+            mensajeError = "El archivo no contiene datos en la primera hoja.";
+            importoError = true;
+            return;
+        }
+
+        var rowCount = worksheet.Dimension?.Rows ?? 0;
+        if (rowCount < 2)
+        {
+            mensajeError = "El archivo no contiene datos (solo cabecera).";
+            importoError = true;
+            return;
+        }
+
+        for (int row = 2; row <= rowCount; row++)
+        {
+            var importRow = new HabitacionImportRow
+            {
+                RowNumber = row,
+                DescripcionHab = worksheet.Cells[row, 1].Text?.Trim() ?? "",
+                Categoria = worksheet.Cells[row, 2].Text?.Trim() ?? "",
+                MaxPersonas = worksheet.Cells[row, 3].Text?.Trim() ?? ""
+            };
+
+            if (string.IsNullOrWhiteSpace(importRow.DescripcionHab))
+                importRow.Errores.Add("Descripción requerida");
+            else if (importRow.DescripcionHab.Length > 20)
+                importRow.Errores.Add("Máximo 20 caracteres");
+
+            if (string.IsNullOrWhiteSpace(importRow.Categoria))
+                importRow.Errores.Add("Categoría requerida");
+
+            if (string.IsNullOrWhiteSpace(importRow.MaxPersonas))
+                importRow.Errores.Add("Max Personas requerido");
+            else if (!int.TryParse(importRow.MaxPersonas, out var maxP) || maxP <= 0)
+                importRow.Errores.Add("Debe ser un número entero positivo");
+
+            filasImport.Add(importRow);
+        }
+    }
+
+    private async Task ImportarHabitaciones()
+    {
+        importando = true;
+        importoExito = false;
+        importoError = false;
+
+        try
+        {
+            var validos = filasImport.Where(r => r.Valido).ToList();
+            var habitaciones = new List<Habitacion>();
+            var errores = new List<string>();
+
+            foreach (var row in validos)
+            {
+                var categoria = categorias.FirstOrDefault(c =>
+                    c.TipoHab.Trim().Equals(row.Categoria, StringComparison.OrdinalIgnoreCase))
+                    ?? categorias.FirstOrDefault(c => c.ID_Categoria.ToString() == row.Categoria.Trim());
+
+                if (categoria == null)
+                {
+                    var disponibles = string.Join(", ", categorias.Select(c => c.TipoHab));
+                    errores.Add($"Fila {row.RowNumber}: Categoría '{row.Categoria}' no encontrada. Categorías disponibles: {disponibles}");
+                    continue;
+                }
+
+                if (!int.TryParse(row.MaxPersonas, out var maxPersonas))
+                {
+                    errores.Add($"Fila {row.RowNumber}: Max Personas inválido");
+                    continue;
+                }
+
+                habitaciones.Add(new Habitacion
+                {
+                    DescripcionHab = row.DescripcionHab,
+                    ID_CategoriasFK = categoria.ID_Categoria,
+                    MaxPersonas = maxPersonas,
+                    Estado = true
+                });
+            }
+
+            int insertados = 0;
+            if (habitaciones.Count > 0)
+            {
+                Context.Habitaciones.AddRange(habitaciones);
+                await Context.SaveChangesAsync();
+                insertados = habitaciones.Count;
+            }
+
+            if (insertados == 0)
+            {
+                mensajeError = "No se importó ninguna habitación." + (errores.Count > 0
+                    ? "\n" + string.Join("\n", errores) : "");
+                importoError = true;
+            }
+            else
+            {
+                mensajeExito = $"{insertados} habitaciones importadas correctamente.";
+                if (errores.Count > 0)
+                    mensajeExito += "\nSe omitieron filas: " + string.Join(" | ", errores);
+                importoExito = true;
+                tabIndex = 0;
+                Snackbar.Add(mensajeExito, Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error durante la importación: {ex.InnerException?.Message ?? ex.Message}";
+            importoError = true;
+        }
+        finally
+        {
+            importando = false;
+            filasImport.Clear();
+            nombreArchivo = "";
+            await CargarListado();
+            StateHasChanged();
+        }
+    }
+
+    private async Task DescargarTemplate()
+    {
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        using var package = new ExcelPackage();
+        var sheet = package.Workbook.Worksheets.Add("Habitaciones");
+        sheet.Cells[1, 1].Value = "DescripcionHab";
+        sheet.Cells[1, 2].Value = "Categoria";
+        sheet.Cells[1, 3].Value = "MaxPersonas";
+        sheet.Cells[1, 1, 1, 3].Style.Font.Bold = true;
+
+        var data = package.GetAsByteArray();
+        var ms = new MemoryStream(data);
+        using var streamRef = new DotNetStreamReference(ms);
+        await Js.InvokeVoidAsync("downloadFileFromStream", "template_habitaciones.xlsx", streamRef);
+    }
+
+    // ===================== DTOs =====================
+
+    public class HabitacionListDto
+    {
+        public decimal ID_NroHab { get; set; }
+        public string DescripcionHab { get; set; } = "";
+        public string Categoria { get; set; } = "";
+        public int MaxPersonas { get; set; }
+        public bool Estado { get; set; }
+    }
+
+    public class HabitacionImportRow
+    {
+        public int RowNumber { get; set; }
+        public string DescripcionHab { get; set; } = "";
+        public string Categoria { get; set; } = "";
+        public string MaxPersonas { get; set; } = "";
+        public List<string> Errores { get; set; } = new();
+        public bool Valido => Errores.Count == 0;
+    }
+}

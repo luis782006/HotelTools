@@ -1,0 +1,188 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="proveedor.ID_RazonSocialFK"
+                        Variant="Variant.Outlined" Label="Razón Social" ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="Debe seleccionar una razón social">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                        @foreach (var r in razonesSociales)
+                        {
+                            <MudSelectItem Value="r.ID_RazonSocial">@r.Nombre</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="proveedor.ID_RepresentanteFK"
+                        Variant="Variant.Outlined" Label="Representante" ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="Debe seleccionar un representante">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                        @foreach (var r in representantes)
+                        {
+                            <MudSelectItem Value="r.ID_Representante">@r.Nombre</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo == "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarEliminar"
+                Color="Color.Error" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Delete">
+                Eliminar
+            </MudButton>
+        }
+        @if (Modo != "Ver" && Modo != "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarGuardar"
+                Disabled="!success || proveedor.ID_RazonSocialFK == 0m || proveedor.ID_RepresentanteFK == 0m"
+                Color="Color.Success" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Save">
+                Guardar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+
+    private bool SoloLectura;
+    private bool success = true;
+    private string[] errors = { };
+
+    private Proveedor proveedor = new();
+    private MudForm? form;
+    private List<RazonSocial> razonesSociales = new();
+    private List<Representante> representantes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver" || Modo == "Eliminar";
+        razonesSociales = await Context.RazonSociales.AsNoTracking().OrderBy(r => r.Nombre).ToListAsync();
+        representantes = await Context.Representantes.AsNoTracking().OrderBy(r => r.Nombre).ToListAsync();
+
+        if (ID > 0)
+        {
+            var p = await Context.Proveedores.FindAsync(ID);
+            if (p != null)
+                proveedor = p;
+        }
+    }
+
+    private void MostrarError(Exception ex, string accion)
+    {
+        var inner = ex.InnerException?.Message ?? ex.Message;
+        var esViolacionFK = inner.Contains("REFERENCE", StringComparison.OrdinalIgnoreCase)
+            || inner.Contains("constraint", StringComparison.OrdinalIgnoreCase);
+        Snackbar.Add(
+            esViolacionFK
+                ? (accion == "eliminar"
+                    ? "No se puede eliminar el registro porque está asociado a otros registros."
+                    : "No se pudo guardar el registro porque ya está asociado a otros registros.")
+                : (accion == "eliminar"
+                    ? "No se pudo eliminar el registro. Intente nuevamente."
+                    : "No se pudo guardar el registro. Verifique los datos e intente nuevamente."),
+            Severity.Error);
+    }
+
+    private async Task ConfirmarGuardar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea guardar los cambios?",
+            yesText: "Guardar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Guardar();
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (proveedor.ID_RazonSocialFK == 0m)
+            {
+                Snackbar.Add("Debe seleccionar una razón social", Severity.Error);
+                return;
+            }
+            if (proveedor.ID_RepresentanteFK == 0m)
+            {
+                Snackbar.Add("Debe seleccionar un representante", Severity.Error);
+                return;
+            }
+
+            if (Modo == "Insertar")
+            {
+                Context.Proveedores.Add(proveedor);
+            }
+            else
+            {
+                Context.Proveedores.Update(proveedor);
+            }
+
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add(Modo == "Insertar" ? "Proveedor creado correctamente" : "Proveedor actualizado correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex, "guardar");
+        }
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar Eliminación",
+            "¿Está seguro de eliminar este proveedor?",
+            yesText: "Eliminar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Eliminar();
+        }
+    }
+
+    private async Task Eliminar()
+    {
+        try
+        {
+            Context.Proveedores.Remove(proveedor);
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Proveedor eliminado correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex, "eliminar");
+        }
+    }
+
+    void Cancelar() => MudDialog.Cancel();
+}

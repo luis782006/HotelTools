@@ -26,7 +26,7 @@
                 <MudText Typo="Typo.body2" Class="px-4 mud-text-secondary">Panel Admin</MudText>
                 <MudDivider Class="my-2" />
                 <MudNavGroup Title="Configuraciones Globales" Icon="@Icons.Material.Filled.Settings" Expanded="false">
-                    <MudNavLink Href="/">Habitaciones</MudNavLink>
+                    <MudNavLink Href="/cargamasivahabitaciones">Carga Masiva Habitaciones</MudNavLink>
                     <MudNavLink Href="/listadepartamentos">Departamentos</MudNavLink>
                     <MudNavLink Href="/listacategoriahabitaciones">Categoria Habitaciones</MudNavLink>
                     <MudNavGroup Title="Usuarios" Icon="@Icons.Material.Filled.Person" Expanded="false">
@@ -45,8 +45,9 @@
                 </RequierePermiso>
                 <RequierePermiso PermisoRequerido="ManageProveedores">
                     <MudNavGroup Title="Proveedores" Icon="@Icons.Material.Filled.SupervisedUserCircle" Expanded="false">
-                        <MudNavLink Href="/">Registros de Proveedores</MudNavLink>
-                        <MudNavLink Href="/">Razón Social</MudNavLink>                
+                        <MudNavLink Href="/listaproveedores">Registros de Proveedores</MudNavLink>
+                        <MudNavLink Href="/listarazonsocial">Razón Social</MudNavLink>
+                        <MudNavLink Href="/listarepresentantes">Representantes</MudNavLink>
                     </MudNavGroup>
                 </RequierePermiso>
                 <MudDivider Class="my-2"/>

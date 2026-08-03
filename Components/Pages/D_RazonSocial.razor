@@ -1,0 +1,207 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12" sm="8">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="razonSocial.Nombre" Label="Nombre"
+                        ReadOnly="@SoloLectura" Required="true" MaxLength="80"
+                        RequiredError="El nombre es requerido" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="decimal"
+                        @bind-Value="razonSocial.Cuil" Label="CUIL"
+                        ReadOnly="@SoloLectura" Required="true"
+                        RequiredError="El CUIL es requerido" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="razonSocial.DireccionFisica" Label="Dirección Física"
+                        ReadOnly="@SoloLectura" Required="true" MaxLength="120"
+                        RequiredError="La dirección física es requerida" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="razonSocial.DireccionDigital" Label="Dirección Digital"
+                        ReadOnly="@SoloLectura" MaxLength="160" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="razonSocial.TelefonoFijo" Label="Teléfono Fijo"
+                        ReadOnly="@SoloLectura" MaxLength="20" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="razonSocial.TelefonoCelular" Label="Teléfono Celular"
+                        ReadOnly="@SoloLectura" MaxLength="20" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="razonSocial.Email" Label="Email"
+                        ReadOnly="@SoloLectura" MaxLength="120" Validation="@ValidarEmail" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo == "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarEliminar"
+                Color="Color.Error" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Delete">
+                Eliminar
+            </MudButton>
+        }
+        @if (Modo != "Ver" && Modo != "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarGuardar" Disabled="!success || razonSocial.Cuil == 0m"
+                Color="Color.Success" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Save">
+                Guardar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+
+    private bool SoloLectura;
+    private bool success = true;
+    private string[] errors = { };
+
+    private RazonSocial razonSocial = new();
+    private MudForm? form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver" || Modo == "Eliminar";
+
+        if (ID > 0)
+        {
+            var r = await Context.RazonSociales.FindAsync(ID);
+            if (r != null)
+                razonSocial = r;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Modo != "Ver" && Modo != "Eliminar")
+        {
+            form?.Validate();
+            StateHasChanged();
+        }
+    }
+
+    private string? ValidarEmail(string valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
+            return null;
+        valor = valor.Trim();
+        return new System.Text.RegularExpressions.Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$").IsMatch(valor)
+            ? null : "Ingrese un email válido";
+    }
+
+    private void MostrarError(Exception ex, string accion)
+    {
+        var inner = ex.InnerException?.Message ?? ex.Message;
+        var esViolacionFK = inner.Contains("REFERENCE", StringComparison.OrdinalIgnoreCase)
+            || inner.Contains("constraint", StringComparison.OrdinalIgnoreCase);
+        Snackbar.Add(
+            esViolacionFK
+                ? (accion == "eliminar"
+                    ? "No se puede eliminar el registro porque está asociado a otros registros."
+                    : "No se pudo guardar el registro porque ya está asociado a otros registros.")
+                : (accion == "eliminar"
+                    ? "No se pudo eliminar el registro. Intente nuevamente."
+                    : "No se pudo guardar el registro. Verifique los datos e intente nuevamente."),
+            Severity.Error);
+    }
+
+    private async Task ConfirmarGuardar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea guardar los cambios?",
+            yesText: "Guardar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Guardar();
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (Modo == "Insertar")
+            {
+                Context.RazonSociales.Add(razonSocial);
+            }
+            else
+            {
+                Context.RazonSociales.Update(razonSocial);
+            }
+
+            razonSocial.Email = razonSocial.Email?.Trim();
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add(Modo == "Insertar" ? "Razón social creada correctamente" : "Razón social actualizada correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex, "guardar");
+        }
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar Eliminación",
+            "¿Está seguro de eliminar esta razón social?",
+            yesText: "Eliminar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Eliminar();
+        }
+    }
+
+    private async Task Eliminar()
+    {
+        try
+        {
+            Context.RazonSociales.Remove(razonSocial);
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Razón social eliminada correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex, "eliminar");
+        }
+    }
+
+    void Cancelar() => MudDialog.Cancel();
+}

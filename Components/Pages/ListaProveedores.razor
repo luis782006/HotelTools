@@ -1,0 +1,151 @@
+@page "/listaproveedores"
+@attribute [Authorize(Policy = "ManageProveedores")]
+
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ManageProveedores" Objeto="ListaProveedores" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4">Listado de Proveedores</MudText>
+    <MudPaper Class="d-flex justify-content-center p-4" Width="100%">
+        <MudPaper Style="width:80rem;">
+            @if (Cargando)
+            {
+                <MudGrid Style="text-align:center;">
+                    <MudItem sm="12">
+                        <MudText Typo="Typo.h6">Cargando registros...</MudText>
+                        <MudProgressCircular Color="Color.Primary" Style="height:70px;width:70px;" Indeterminate="true" />
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudTable Items="@lstProveedores" Breakpoint="Breakpoint.Md" Style="width:100%;padding:1rem; margin:auto;" Dense="true" Hover="true" Striped="true" @ref="table" FixedHeader="true" Filter="new Func<ProveedorListDto,bool>(FilterFunc1)">
+                    <ToolBarContent>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" Style="width:100%;">
+                            <MudTextField T="string" @bind-Value="searchString" Style="width:300px;" Placeholder="Buscar..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+                            <MudTooltip Text="Agregar Proveedor">
+                                <MudFab Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" OnClick="@(() => AccionProveedor(maxWidth, "Insertar", 0))" />
+                            </MudTooltip>
+                        </MudStack>
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Acciones</MudTh>
+                        <MudTh Style="text-align:left;">Razón Social</MudTh>
+                        <MudTh Style="text-align:left;">Representante</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd Class="d-inline-flex justify-center">
+                            <MudTooltip Text="Ver Proveedor">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Search" Color="Color.Info" OnClick="@((e) => AccionProveedor(maxWidth, "Ver", @context.ID_Proveedor))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Editar Proveedor">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success" OnClick="@((e) => AccionProveedor(maxWidth, "Editar", @context.ID_Proveedor))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Eliminar Proveedor">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@((e) => AccionProveedor(maxWidth, "Eliminar", @context.ID_Proveedor))" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd DataLabel="RazonSocial">@context.RazonSocial</MudTd>
+                        <MudTd DataLabel="Representante">@context.Representante</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudTable<ProveedorListDto> table;
+    private string searchString = "";
+    private string infoFormat = "{first_item}-{last_item} de {all_items}";
+    private bool Cargando = true;
+
+    private List<ProveedorListDto> lstProveedores = new();
+    private Dictionary<decimal, string> razonSocialLookup = new();
+    private Dictionary<decimal, string> representanteLookup = new();
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+
+    private DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        razonSocialLookup = await Context.RazonSociales.AsNoTracking()
+            .ToDictionaryAsync(r => r.ID_RazonSocial, r => r.Nombre);
+        representanteLookup = await Context.Representantes.AsNoTracking()
+            .ToDictionaryAsync(r => r.ID_Representante, r => r.Nombre);
+
+        lstProveedores = await Context.Proveedores.AsNoTracking()
+            .OrderBy(p => p.ID_Proveedor)
+            .Select(p => new ProveedorListDto
+            {
+                ID_Proveedor = p.ID_Proveedor,
+                ID_RazonSocialFK = p.ID_RazonSocialFK,
+                ID_RepresentanteFK = p.ID_RepresentanteFK
+            })
+            .ToListAsync();
+
+        foreach (var item in lstProveedores)
+        {
+            item.RazonSocial = razonSocialLookup.ContainsKey(item.ID_RazonSocialFK)
+                ? razonSocialLookup[item.ID_RazonSocialFK]
+                : "";
+            item.Representante = representanteLookup.ContainsKey(item.ID_RepresentanteFK)
+                ? representanteLookup[item.ID_RepresentanteFK]
+                : "";
+        }
+    }
+
+    private bool FilterFunc1(ProveedorListDto element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(ProveedorListDto element, string search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return true;
+        if (element.RazonSocial.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.Representante.Contains(search, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async Task AccionProveedor(DialogOptions options, string modo, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", modo },
+            { "ID", id }
+        };
+        var dialog = DialogService.Show<D_Proveedor>(modo.ToUpper() + " PROVEEDOR", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarDatos();
+            StateHasChanged();
+        }
+    }
+
+    public class ProveedorListDto
+    {
+        public decimal ID_Proveedor { get; set; }
+        public decimal ID_RazonSocialFK { get; set; }
+        public decimal ID_RepresentanteFK { get; set; }
+        public string RazonSocial { get; set; } = "";
+        public string Representante { get; set; } = "";
+    }
+}
