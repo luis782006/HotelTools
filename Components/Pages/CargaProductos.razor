@@ -54,15 +54,20 @@
 
             <MudDivider Class="my-4" />
 
-            @* Agregar producto nuevo *@
+            @* Agregar producto + Generar códigos *@
             <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight:600;">Productos</MudText>
-            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Wrap="Wrap.Wrap">
                 <MudTextField T="string" @bind-Value="nuevoProductoNombre" Label="Nuevo producto"
                               Variant="Variant.Outlined" Adornment="Adornment.End"
                               AdornmentIcon="@Icons.Material.Filled.Add"
                               OnAdornmentClick="AgregarProducto"
                               Placeholder="Ej: Pava Electrica"
                               Style="max-width: 350px;" />
+
+                <MudRadioGroup T="bool" @bind-Value="generarCodigos">
+                    <MudRadio T="bool" Value="true" Color="Color.Primary">Generar Código</MudRadio>
+                    <MudRadio T="bool" Value="false" Color="Color.Primary">No Generar Código</MudRadio>
+                </MudRadioGroup>
             </MudStack>
 
             @* Checkbox seleccionar todos los productos *@
@@ -99,12 +104,6 @@
                     </MudStack>
                 }
             </MudStack>
-
-            @* Opción de generar códigos *@
-            <MudRadioGroup T="bool" @bind-Value="generarCodigos" Class="mb-4">
-                <MudRadio T="bool" Value="true" Color="Color.Primary">Generar códigos automáticamente</MudRadio>
-                <MudRadio T="bool" Value="false" Color="Color.Primary">No generar códigos (ingresar manualmente después)</MudRadio>
-            </MudRadioGroup>
 
             @* Botón cargar *@
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Inventory"
@@ -219,6 +218,7 @@
     private void ToggleHabitacion(HabitacionSeleccionDto hab, bool valor)
     {
         hab.Seleccionada = valor;
+        StateHasChanged();
     }
 
     private void AgregarProducto()
