@@ -36,10 +36,11 @@
                 <MudChipSet T="decimal" SelectionMode="SelectionMode.MultiSelection"
                             SelectedValues="habitacionesSeleccionadas"
                             SelectedValuesChanged="OnHabitacionesChanged"
+                            CheckMark="true"
                             Variant="Variant.Filled">
                     @foreach (var hab in lstHabitacionesFiltradas)
                     {
-                        <MudChip Value="@hab.ID_NroHab" Text="@hab.DescripcionHab" />
+                        <MudChip Value="@hab.ID_NroHab" Text="@hab.DescripcionHab" Default="@(habitacionesSeleccionadas.Contains(hab.ID_NroHab))" />
                     }
                 </MudChipSet>
             </MudStack>
