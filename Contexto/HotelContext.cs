@@ -35,6 +35,7 @@ namespace HotelTools.Models
         public virtual DbSet<CategoriaProducto> CategoriasProductos { get; set; }
         public virtual DbSet<Modelo> Modelos { get; set; }
         public virtual DbSet<Producto> Productos { get; set; }
+        public virtual DbSet<HabitacionProductos> HabitacionProductos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -159,7 +160,19 @@ namespace HotelTools.Models
                 entity.Property(e => e.Codigo).HasMaxLength(80);
                 entity.Property(e => e.Descripcion).HasMaxLength(60);
                 entity.Property(e => e.ID_NroFacturaFK);
+                entity.Property(e => e.ID_HabitacionFK);
+                entity.Property(e => e.Estado).HasMaxLength(20).HasDefaultValue("Nuevo");
+                entity.Property(e => e.Observaciones).HasMaxLength(200);
+                entity.Property(e => e.ReparadoPor);
+                entity.Property(e => e.FechaReparacion);
                 entity.ToTable("Productos", "Inventarios");
+            });
+
+            modelBuilder.Entity<HabitacionProductos>(entity =>
+            {
+                entity.HasKey(c => c.ID_HabProductos);
+                entity.Property(e => e.ID_HabProductos).ValueGeneratedOnAdd();
+                entity.ToTable("HabitacionProductos", "Inventarios");
             });
         }
     }

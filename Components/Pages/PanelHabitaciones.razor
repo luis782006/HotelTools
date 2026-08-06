@@ -1,7 +1,208 @@
 ﻿@page "/panelhabitaciones"
 @attribute [Authorize(Policy = "ViewHabitacionesStatus")]
-<h3>Panel de Habitaciones</h3>
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ViewHabitacionesStatus" Objeto="PanelHabitaciones" />
+
+<style>
+    .room-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .room-card {
+        position: relative;
+        flex: 1 1 calc(100% / 6 - 1.5rem);
+        min-width: 180px;
+        max-width: 280px;
+        height: 160px;
+        overflow: hidden;
+    }
+
+    .room-panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 50%;
+        height: 100%;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        z-index: 2;
+    }
+
+    .room-card:hover .room-panel {
+        transform: translateX(0);
+    }
+</style>
+
+<MudContainer>
+    <MudText Typo="Typo.h4" Class="mb-4">Panel de Habitaciones</MudText>
+
+    @if (Cargando)
+    {
+        <MudStack AlignItems="AlignItems.Center" Class="py-8">
+            <MudText Typo="Typo.h6">Cargando habitaciones...</MudText>
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+        </MudStack>
+    }
+    else if (lstHabitaciones.Count == 0)
+    {
+        <MudText Typo="Typo.h6" Align="Align.Center">No hay habitaciones registradas.</MudText>
+    }
+    else
+    {
+        <MudPaper Elevation="4" Class="pa-4">
+            <div class="room-grid">
+                @foreach (var hab in lstHabitaciones)
+                {
+                    var estado = hab.Estado;
+                    var colorBorde = estado.GetColorHex();
+                    var chipColor = estado.GetMudColor();
+                    var chipLabel = estado.GetLeyenda();
+
+                    <div class="room-card">
+                        <MudPaper Elevation="3"
+                                  Style="@($"height:100%; border: 3px solid {colorBorde} !important; background: #27272F; border-radius: 8px;")">
+                            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
+                                Style="height: 100%; padding: 1rem;">
+                                <MudText Typo="Typo.h3" Style="color: #C1C1C4; font-weight: 700;">
+                                    @hab.DescripcionHab
+                                </MudText>
+                                <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                    Max: @hab.MaxPersonas personas
+                                </MudText>
+                                <MudChip T="string" Size="Size.Small" Style="@($"background: {chipColor}; color: #fff;")" Variant="Variant.Filled">
+                                    @chipLabel
+                                </MudChip>
+                            </MudStack>
+
+                        </MudPaper>
+
+                        <div class="room-panel">
+                            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
+                                      Style="height: 100%; background: #32333d; padding: 0.5rem; ">
+                                <MudButton Variant="Variant.Filled" Size="Size.Small" FullWidth="true"
+                                           Style="background: #6123d3; color: #ccccd7; font-weight: 600;"
+                                    OnClick="@(() => AbrirEstadoHab(hab))">
+                                    Estado Hab
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Size="Size.Small" FullWidth="true"
+                                           Style="background: #6123d3; color: #ccccd7; font-weight: 600;"
+                                    OnClick="@(() => AbrirInventario(hab))">
+                                    Inv
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Size="Size.Small" FullWidth="true"
+                                           Style="background: #6123d3; color: #ccccd7; font-weight: 600;"
+                                    OnClick="@(() => AbrirMucama(hab))">
+                                    Mucama
+                                </MudButton>
+                            </MudStack>
+                        </div>
+                    </div>
+                }
+            </div>
+        </MudPaper>
+    }
+</MudContainer>
 
 @code {
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
 
+    private bool Cargando = true;
+    private List<HabitacionDto> lstHabitaciones = new();
+    private Dictionary<decimal, List<ProductoHabitacionDto>> productosPorHabitacion = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var habitaciones = await Context.Habitaciones.AsNoTracking()
+            .OrderBy(h => h.DescripcionHab)
+            .ToListAsync();
+
+        var habitacionProductos = await Context.HabitacionProductos.AsNoTracking()
+            .ToListAsync();
+
+        var productos = await Context.Productos.AsNoTracking()
+            .ToListAsync();
+
+        foreach (var hp in habitacionProductos)
+        {
+            var prod = productos.FirstOrDefault(p => p.ID_Productos == hp.ID_ProductosFK);
+            if (prod != null)
+            {
+                if (!productosPorHabitacion.ContainsKey(hp.ID_HabFK))
+                    productosPorHabitacion[hp.ID_HabFK] = new List<ProductoHabitacionDto>();
+
+                productosPorHabitacion[hp.ID_HabFK].Add(new ProductoHabitacionDto
+                {
+                    Codigo = prod.Codigo,
+                    Descripcion = prod.Descripcion,
+                    Cantidad = hp.Cantidad
+                });
+            }
+        }
+
+        lstHabitaciones = habitaciones.Select(h => new HabitacionDto
+        {
+            ID_NroHab = h.ID_NroHab,
+            DescripcionHab = h.DescripcionHab,
+            MaxPersonas = h.MaxPersonas,
+            Estado = EstadoHabitacionHelper.FromBool(h.Estado),
+            TieneProductos = productosPorHabitacion.ContainsKey(h.ID_NroHab)
+        }).ToList();
+
+        Cargando = false;
+    }
+
+    private async Task AbrirInventario(HabitacionDto hab)
+    {
+        var productos = productosPorHabitacion.ContainsKey(hab.ID_NroHab)
+            ? productosPorHabitacion[hab.ID_NroHab]
+            : new List<ProductoHabitacionDto>();
+
+        var parameters = new DialogParameters
+        {
+            { "Habitacion", hab },
+            { "Productos", productos }
+        };
+
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+        DialogService.Show<PanelHabitacionInventarioPopup>(
+            $"Inventario - Habitación {hab.DescripcionHab}",
+            parameters,
+            options);
+    }
+
+    private async Task AbrirEstadoHab(HabitacionDto hab)
+    {
+        await DialogService.ShowMessageBox(
+            $"Estado - Habitación {hab.DescripcionHab}",
+            $"Estado actual: {hab.Estado.GetLeyenda()}\nMáximo personas: {hab.MaxPersonas}",
+            yesText: "Cerrar");
+    }
+
+    private async Task AbrirMucama(HabitacionDto hab)
+    {
+        await DialogService.ShowMessageBox(
+            $"Mucama - Habitación {hab.DescripcionHab}",
+            "Módulo de mucama próximamente.",
+            yesText: "Cerrar");
+    }
+
+    public class HabitacionDto
+    {
+        public decimal ID_NroHab { get; set; }
+        public string DescripcionHab { get; set; } = "";
+        public int MaxPersonas { get; set; }
+        public EstadoHabitacion Estado { get; set; }
+        public bool TieneProductos { get; set; }
+    }
+
+    public class ProductoHabitacionDto
+    {
+        public string Codigo { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public int Cantidad { get; set; }
+    }
 }
