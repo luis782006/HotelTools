@@ -36,8 +36,7 @@
                 @foreach (var hab in lstHabitacionesFiltradas)
                 {
                     <MudChip T="decimal" Value="@hab.ID_NroHab"
-                             Selected="@hab.Seleccionada"
-                             SelectedChanged="@((bool val) => ToggleHabitacion(hab, val))"
+                             @bind-Selected="@hab.Seleccionada"
                              Color="@(hab.Seleccionada ? Color.Primary : Color.Default)"
                              Variant="Variant.Filled">
                         @hab.DescripcionHab
@@ -137,6 +136,7 @@
         {
             foreach (var h in lstHabitacionesFiltradas)
                 h.Seleccionada = value;
+            StateHasChanged();
         }
     }
 
@@ -213,12 +213,6 @@
         lstHabitacionesFiltradas = lstHabitacionesTodas
             .Where(h => h.ID_CategoriasFK == categoriaSeleccionada)
             .ToList();
-    }
-
-    private void ToggleHabitacion(HabitacionSeleccionDto hab, bool valor)
-    {
-        hab.Seleccionada = valor;
-        StateHasChanged();
     }
 
     private void AgregarProducto()
