@@ -36,7 +36,7 @@
                 <MudChipSet T="decimal" SelectionMode="SelectionMode.MultiSelection"
                             SelectedValues="habitacionesSeleccionadas"
                             SelectedValuesChanged="OnHabitacionesChanged"
-                            Color="Color.Primary" Variant="Variant.Filled">
+                            Variant="Variant.Filled">
                     @foreach (var hab in lstHabitacionesFiltradas)
                     {
                         <MudChip Value="@hab.ID_NroHab" Text="@hab.DescripcionHab" />
