@@ -33,15 +33,15 @@
             <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Wrap="Wrap.Wrap">
                 <MudCheckBox T="bool" @bind-Value="todasSeleccionadas" Label="Seleccionar todo"
                              Color="Color.Primary" />
-                @foreach (var hab in lstHabitacionesFiltradas)
-                {
-                    <MudChip T="decimal" Value="@hab.ID_NroHab"
-                             @bind-Selected="@hab.Seleccionada"
-                             Color="@(hab.Seleccionada ? Color.Primary : Color.Default)"
-                             Variant="Variant.Filled">
-                        @hab.DescripcionHab
-                    </MudChip>
-                }
+                <MudChipSet T="decimal" SelectionMode="SelectionMode.MultiSelection"
+                            SelectedValues="habitacionesSeleccionadas"
+                            SelectedValuesChanged="OnHabitacionesChanged"
+                            Color="Color.Primary" Variant="Variant.Filled">
+                    @foreach (var hab in lstHabitacionesFiltradas)
+                    {
+                        <MudChip Value="@hab.ID_NroHab" Text="@hab.DescripcionHab" />
+                    }
+                </MudChipSet>
             </MudStack>
 
             @if (lstHabitacionesFiltradas.Count == 0)
@@ -128,16 +128,26 @@
     private decimal categoriaSeleccionada;
     private bool generarCodigos = true;
     private string nuevoProductoNombre = "";
+    private List<decimal> habitacionesSeleccionadas = new();
 
     private bool todasSeleccionadas
     {
-        get => lstHabitacionesFiltradas.Count > 0 && lstHabitacionesFiltradas.All(h => h.Seleccionada);
+        get => lstHabitacionesFiltradas.Count > 0 &&
+               lstHabitacionesFiltradas.All(h => habitacionesSeleccionadas.Contains(h.ID_NroHab));
         set
         {
-            foreach (var h in lstHabitacionesFiltradas)
-                h.Seleccionada = value;
+            if (value)
+                habitacionesSeleccionadas = lstHabitacionesFiltradas.Select(h => h.ID_NroHab).ToList();
+            else
+                habitacionesSeleccionadas.Clear();
             StateHasChanged();
         }
+    }
+
+    private void OnHabitacionesChanged(IReadOnlyCollection<decimal> valores)
+    {
+        habitacionesSeleccionadas = valores?.ToList() ?? new();
+        StateHasChanged();
     }
 
     private bool todosProductosMarcados
@@ -151,7 +161,7 @@
     }
 
     private List<HabitacionSeleccionDto> lstHabitacionesSeleccionadas =>
-        lstHabitacionesFiltradas.Where(h => h.Seleccionada).ToList();
+        lstHabitacionesFiltradas.Where(h => habitacionesSeleccionadas.Contains(h.ID_NroHab)).ToList();
 
     private List<ProductoCargaDto> lstProductosSeleccionados =>
         lstProductos.Where(p => p.Seleccionado && p.Cantidad > 0).ToList();
@@ -176,8 +186,7 @@
             {
                 ID_NroHab = h.ID_NroHab,
                 DescripcionHab = h.DescripcionHab,
-                ID_CategoriasFK = h.ID_CategoriasFK,
-                Seleccionada = false
+                ID_CategoriasFK = h.ID_CategoriasFK
             })
             .ToListAsync();
 
@@ -207,8 +216,7 @@
 
     private void FiltrarHabitaciones()
     {
-        foreach (var h in lstHabitacionesTodas)
-            h.Seleccionada = false;
+        habitacionesSeleccionadas = new();
 
         lstHabitacionesFiltradas = lstHabitacionesTodas
             .Where(h => h.ID_CategoriasFK == categoriaSeleccionada)
@@ -292,7 +300,6 @@
         public decimal ID_NroHab { get; set; }
         public string DescripcionHab { get; set; } = "";
         public decimal ID_CategoriasFK { get; set; }
-        public bool Seleccionada { get; set; }
     }
 
     public class ProductoCargaDto
