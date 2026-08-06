@@ -1,0 +1,314 @@
+@page "/cargaproductos"
+@attribute [Authorize(Policy = "ManageConfiguraciones")]
+@using Microsoft.EntityFrameworkCore
+
+<ValidaPermiso PermisoRequerido="ManageConfiguraciones" Objeto="CargaProductos" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4" Class="mb-4">Carga de Productos</MudText>
+
+    @if (Cargando)
+    {
+        <MudStack AlignItems="AlignItems.Center" Class="py-8">
+            <MudText Typo="Typo.h6">Cargando datos...</MudText>
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+        </MudStack>
+    }
+    else
+    {
+        <MudPaper Elevation="4" Class="pa-4">
+
+            @* Selector de categoría *@
+            <MudSelect T="decimal" @bind-Value="categoriaSeleccionada" Label="Categoría de Habitación"
+                       Variant="Variant.Outlined" Class="mb-4" AdornmentIcon="@Icons.Material.Filled.FilterList"
+                       SelectedValuesChanged="@OnCategoriaChanged">
+                @foreach (var cat in lstCategorias)
+                {
+                    <MudSelectItem Value="@cat.ID_Categoria">@cat.TipoHab</MudSelectItem>
+                }
+            </MudSelect>
+
+            @* Habitaciones *@
+            <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight:600;">Habitaciones</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Wrap="Wrap.Wrap">
+                <MudCheckBox T="bool" @bind-Value="todasSeleccionadas" Label="Seleccionar todo"
+                             Color="Color.Primary" />
+                @foreach (var hab in lstHabitacionesFiltradas)
+                {
+                    <MudChip T="decimal" Value="@hab.ID_NroHab"
+                             Selected="@hab.Seleccionada"
+                             SelectedChanged="@((bool val) => ToggleHabitacion(hab, val))"
+                             Color="@(hab.Seleccionada ? Color.Primary : Color.Default)"
+                             Variant="Variant.Filled">
+                        @hab.DescripcionHab
+                    </MudChip>
+                }
+            </MudStack>
+
+            @if (lstHabitacionesFiltradas.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Warning" Class="mb-4">
+                    No hay habitaciones para esta categoría.
+                </MudText>
+            }
+
+            <MudDivider Class="my-4" />
+
+            @* Agregar producto nuevo *@
+            <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight:600;">Productos</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+                <MudTextField T="string" @bind-Value="nuevoProductoNombre" Label="Nuevo producto"
+                              Variant="Variant.Outlined" Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.Add"
+                              OnAdornmentClick="AgregarProducto"
+                              Placeholder="Ej: Pava Electrica"
+                              Style="max-width: 350px;" />
+            </MudStack>
+
+            @* Checkbox seleccionar todos los productos *@
+            <MudCheckBox T="bool" @bind-Value="todosProductosMarcados" Label="Marcar/Desmarcar todos los productos"
+                         Color="Color.Primary" Class="mb-2" />
+
+            @* Lista de productos *@
+            <MudStack Class="mb-4" Style="max-height: 400px; overflow-y: auto;">
+                @foreach (var prod in lstProductos)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Class="pa-2"
+                              Style="border: 1px solid #3a3a4a; border-radius: 8px; background: #1e1e2e;">
+
+                        <MudCheckBox T="bool" @bind-Value="prod.Seleccionado" Color="Color.Primary" />
+
+                        <MudText Typo="Typo.body1" Style="color: #C1C1C4; min-width: 200px;">
+                            @prod.Descripcion
+                            @if (!string.IsNullOrEmpty(prod.CodigoExistente))
+                            {
+                                <MudText Typo="Typo.caption" Style="color: #888;"> (@prod.CodigoExistente)</MudText>
+                            }
+                        </MudText>
+
+                        <MudSpacer />
+
+                        <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+                            <MudButton OnClick="@(() => prod.Cantidad = Math.Max(0, prod.Cantidad - 1))"
+                                       Disabled="@(!prod.Seleccionado)">-</MudButton>
+                            <MudButton Disabled="true" Style="min-width: 40px;">@prod.Cantidad</MudButton>
+                            <MudButton OnClick="@(() => prod.Cantidad++)"
+                                       Disabled="@(!prod.Seleccionado)">+</MudButton>
+                        </MudButtonGroup>
+
+                    </MudStack>
+                }
+            </MudStack>
+
+            @* Opción de generar códigos *@
+            <MudRadioGroup T="bool" @bind-Value="generarCodigos" Class="mb-4">
+                <MudRadio T="bool" Value="true" Color="Color.Primary">Generar códigos automáticamente</MudRadio>
+                <MudRadio T="bool" Value="false" Color="Color.Primary">No generar códigos (ingresar manualmente después)</MudRadio>
+            </MudRadioGroup>
+
+            @* Botón cargar *@
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Inventory"
+                       Disabled="@(lstHabitacionesSeleccionadas.Count == 0 || lstProductosSeleccionados.Count == 0)"
+                       OnClick="AbrirModalCarga" Class="mt-2">
+                Cargar Productos (@lstHabitacionesSeleccionadas.Count hab, @lstProductosSeleccionados.Count productos)
+            </MudButton>
+
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private IDialogService DialogService { get; set; }
+    [Inject] private ISnackbar Snackbar { get; set; }
+
+    private bool Cargando = true;
+    private List<CategoriaHabitacionDto> lstCategorias = new();
+    private List<HabitacionSeleccionDto> lstHabitacionesTodas = new();
+    private List<HabitacionSeleccionDto> lstHabitacionesFiltradas = new();
+    private List<ProductoCargaDto> lstProductos = new();
+    private decimal categoriaSeleccionada;
+    private bool generarCodigos = true;
+    private string nuevoProductoNombre = "";
+
+    private bool todasSeleccionadas
+    {
+        get => lstHabitacionesFiltradas.Count > 0 && lstHabitacionesFiltradas.All(h => h.Seleccionada);
+        set
+        {
+            foreach (var h in lstHabitacionesFiltradas)
+                h.Seleccionada = value;
+        }
+    }
+
+    private bool todosProductosMarcados
+    {
+        get => lstProductos.Count > 0 && lstProductos.All(p => p.Seleccionado);
+        set
+        {
+            foreach (var p in lstProductos)
+                p.Seleccionado = value;
+        }
+    }
+
+    private List<HabitacionSeleccionDto> lstHabitacionesSeleccionadas =>
+        lstHabitacionesFiltradas.Where(h => h.Seleccionada).ToList();
+
+    private List<ProductoCargaDto> lstProductosSeleccionados =>
+        lstProductos.Where(p => p.Seleccionado && p.Cantidad > 0).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        lstCategorias = await Context.CategoriaHabitaciones.AsNoTracking()
+            .OrderBy(c => c.TipoHab)
+            .Select(c => new CategoriaHabitacionDto
+            {
+                ID_Categoria = c.ID_Categoria,
+                TipoHab = c.TipoHab
+            })
+            .ToListAsync();
+
+        if (lstCategorias.Count > 0)
+            categoriaSeleccionada = lstCategorias.First().ID_Categoria;
+
+        lstHabitacionesTodas = await Context.Habitaciones.AsNoTracking()
+            .OrderBy(h => h.DescripcionHab)
+            .Select(h => new HabitacionSeleccionDto
+            {
+                ID_NroHab = h.ID_NroHab,
+                DescripcionHab = h.DescripcionHab,
+                ID_CategoriasFK = h.ID_CategoriasFK,
+                Seleccionada = false
+            })
+            .ToListAsync();
+
+        lstProductos = await Context.Productos.AsNoTracking()
+            .Where(p => p.ID_HabitacionFK == null)
+            .Select(p => new ProductoCargaDto
+            {
+                ID_Productos = p.ID_Productos,
+                CodigoExistente = p.Codigo,
+                Descripcion = p.Descripcion ?? "",
+                ID_CategoriaProFK = p.ID_CategoriaProFK,
+                ID_ModelosFK = p.ID_ModelosFK,
+                Seleccionado = true,
+                Cantidad = 0
+            })
+            .ToListAsync();
+
+        FiltrarHabitaciones();
+        Cargando = false;
+    }
+
+    private void OnCategoriaChanged()
+    {
+        FiltrarHabitaciones();
+        StateHasChanged();
+    }
+
+    private void FiltrarHabitaciones()
+    {
+        foreach (var h in lstHabitacionesTodas)
+            h.Seleccionada = false;
+
+        lstHabitacionesFiltradas = lstHabitacionesTodas
+            .Where(h => h.ID_CategoriasFK == categoriaSeleccionada)
+            .ToList();
+    }
+
+    private void ToggleHabitacion(HabitacionSeleccionDto hab, bool valor)
+    {
+        hab.Seleccionada = valor;
+    }
+
+    private void AgregarProducto()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoProductoNombre))
+            return;
+
+        lstProductos.Add(new ProductoCargaDto
+        {
+            ID_Productos = 0,
+            CodigoExistente = "",
+            Descripcion = nuevoProductoNombre.Trim(),
+            ID_CategoriaProFK = 0,
+            ID_ModelosFK = 0,
+            Seleccionado = true,
+            Cantidad = 0
+        });
+
+        nuevoProductoNombre = "";
+        StateHasChanged();
+    }
+
+    private async Task AbrirModalCarga()
+    {
+        var parameters = new DialogParameters
+        {
+            { "Habitaciones", lstHabitacionesSeleccionadas },
+            { "Productos", lstProductosSeleccionados },
+            { "GenerarCodigos", generarCodigos },
+            { "CategoriaHabitacion", lstCategorias.FirstOrDefault(c => c.ID_Categoria == categoriaSeleccionada) }
+        };
+
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<CargaProductosModal>(
+            "Confirmar Carga",
+            parameters,
+            options);
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await RecargarDatos();
+        }
+    }
+
+    private async Task RecargarDatos()
+    {
+        Cargando = true;
+        StateHasChanged();
+
+        lstProductos = await Context.Productos.AsNoTracking()
+            .Where(p => p.ID_HabitacionFK == null)
+            .Select(p => new ProductoCargaDto
+            {
+                ID_Productos = p.ID_Productos,
+                CodigoExistente = p.Codigo,
+                Descripcion = p.Descripcion ?? "",
+                ID_CategoriaProFK = p.ID_CategoriaProFK,
+                ID_ModelosFK = p.ID_ModelosFK,
+                Seleccionado = true,
+                Cantidad = 0
+            })
+            .ToListAsync();
+
+        FiltrarHabitaciones();
+        Cargando = false;
+    }
+
+    public class CategoriaHabitacionDto
+    {
+        public decimal ID_Categoria { get; set; }
+        public string TipoHab { get; set; } = "";
+    }
+
+    public class HabitacionSeleccionDto
+    {
+        public decimal ID_NroHab { get; set; }
+        public string DescripcionHab { get; set; } = "";
+        public decimal ID_CategoriasFK { get; set; }
+        public bool Seleccionada { get; set; }
+    }
+
+    public class ProductoCargaDto
+    {
+        public decimal ID_Productos { get; set; }
+        public string CodigoExistente { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public decimal ID_CategoriaProFK { get; set; }
+        public decimal ID_ModelosFK { get; set; }
+        public bool Seleccionado { get; set; }
+        public int Cantidad { get; set; }
+    }
+}

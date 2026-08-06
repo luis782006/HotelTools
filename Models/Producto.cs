@@ -13,5 +13,10 @@ namespace HotelTools.Models
         public decimal ID_CategoriaProFK { get; set; }
         public decimal ID_ModelosFK { get; set; }
         public decimal? ID_NroFacturaFK { get; set; }
+        public decimal? ID_HabitacionFK { get; set; }
+        public string Estado { get; set; } = "Nuevo";
+        public string? Observaciones { get; set; }
+        public decimal? ReparadoPor { get; set; }
+        public DateTime? FechaReparacion { get; set; }
     }
 }

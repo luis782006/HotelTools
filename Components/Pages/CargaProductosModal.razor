@@ -1,0 +1,140 @@
+@using Microsoft.EntityFrameworkCore
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-4">
+            Confirmar carga para @Habitaciones.Count habitación(es)
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-2" Style="color: #888;">
+            Habitaciones: @string.Join(", ", Habitaciones.Select(h => h.DescripcionHab))
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mb-4" Style="color: #888;">
+            Generar códigos: @(GenerarCodigos ? "Sí" : "No")
+        </MudText>
+
+        <MudDivider Class="my-4" />
+
+        <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight:600;">Productos a cargar:</MudText>
+
+        <MudTable Items="@Productos" Dense="true" Hover="true" Striped="true" FixedHeader="true">
+            <HeaderContent>
+                <MudTh>Producto</MudTh>
+                <MudTh>Cantidad</MudTh>
+                <MudTh>Total (hab × cant)</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Producto">@context.Descripcion</MudTd>
+                <MudTd DataLabel="Cantidad">@context.Cantidad</MudTd>
+                <MudTd DataLabel="Total">@(Habitaciones.Count * context.Cantidad)</MudTd>
+            </RowTemplate>
+        </MudTable>
+
+        <MudAlert Severity="Severity.Info" Class="mt-4">
+            Se crearán @(Productos.Sum(p => p.Cantidad) * Habitaciones.Count) registros en la tabla Productos.
+        </MudAlert>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            Cancelar
+        </MudButton>
+        <MudButton OnClick="Guardar" Color="Color.Success" Variant="Variant.Filled"
+            StartIcon="@Icons.Material.Filled.Save" Disabled="@Procesando">
+            @if (Procesando)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            Guardar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public List<CargaProductos.HabitacionSeleccionDto> Habitaciones { get; set; } = new();
+    [Parameter] public List<CargaProductos.ProductoCargaDto> Productos { get; set; } = new();
+    [Parameter] public bool GenerarCodigos { get; set; }
+    [Parameter] public CargaProductos.CategoriaHabitacionDto? CategoriaHabitacion { get; set; }
+
+    [Inject] private HotelContext Context { get; set; }
+    [Inject] private ISnackbar Snackbar { get; set; }
+
+    private bool Procesando = false;
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task Guardar()
+    {
+        Procesando = true;
+        StateHasChanged();
+
+        try
+        {
+            int secuencial = await Context.Productos.AsNoTracking().MaxAsync(p => (int?)p.ID_Productos) ?? 0;
+            secuencial++;
+
+            var inicialesCategoria = ObtenerIniciales(CategoriaHabitacion?.TipoHab ?? "");
+
+            foreach (var hab in Habitaciones)
+            {
+                foreach (var prod in Productos)
+                {
+                    for (int i = 0; i < prod.Cantidad; i++)
+                    {
+                        string codigo = "";
+                        if (GenerarCodigos)
+                        {
+                            var prefijo = prod.Descripcion.Length >= 2
+                                ? prod.Descripcion.Substring(0, 2).ToUpper()
+                                : prod.Descripcion.ToUpper();
+                            codigo = $"{prefijo}-{secuencial:D5}-{inicialesCategoria}";
+                            secuencial++;
+                        }
+
+                        var nuevoProducto = new Producto
+                        {
+                            Codigo = codigo,
+                            Descripcion = prod.Descripcion,
+                            ID_CategoriaProFK = prod.ID_CategoriaProFK,
+                            ID_ModelosFK = prod.ID_ModelosFK,
+                            ID_HabitacionFK = hab.ID_NroHab,
+                            Estado = "Nuevo"
+                        };
+
+                        Context.Productos.Add(nuevoProducto);
+                    }
+                }
+            }
+
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Productos cargados correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            var inner = ex.InnerException?.Message ?? ex.Message;
+            Snackbar.Add($"Error al guardar: {inner}", Severity.Error);
+        }
+        finally
+        {
+            Procesando = false;
+        }
+    }
+
+    private string ObtenerIniciales(string nombreCategoria)
+    {
+        if (string.IsNullOrWhiteSpace(nombreCategoria))
+            return "X";
+
+        var palabras = nombreCategoria.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (palabras.Length == 1)
+            return palabras[0].Substring(0, Math.Min(1, palabras[0].Length)).ToUpper();
+
+        return string.Concat(palabras[0].Substring(0, 1), palabras[1].Substring(0, 1)).ToUpper();
+    }
+}

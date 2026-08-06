@@ -1,0 +1,37 @@
+<MudDialog>
+    <DialogContent>
+        @if (Productos.Count == 0)
+        {
+            <MudText Typo="Typo.body1" Class="text-center">Sin productos registrados en esta habitación.</MudText>
+        }
+        else
+        {
+            <MudTable Items="@Productos" Dense="true" Hover="true" Striped="true" FixedHeader="true">
+                <HeaderContent>
+                    <MudTh>Código</MudTh>
+                    <MudTh>Descripción</MudTh>
+                    <MudTh>Cantidad</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Código">@context.Codigo</MudTd>
+                    <MudTd DataLabel="Descripción">@context.Descripcion</MudTd>
+                    <MudTd DataLabel="Cantidad">@context.Cantidad</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cerrar" Color="Color.Info" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Close">
+            Cerrar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public PanelHabitaciones.HabitacionDto Habitacion { get; set; }
+    [Parameter] public List<PanelHabitaciones.ProductoHabitacionDto> Productos { get; set; } = new();
+
+    void Cerrar() => MudDialog.Cancel();
+}
