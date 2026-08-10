@@ -65,6 +65,8 @@
 
     private void Cancelar() => MudDialog.Cancel();
 
+    private const decimal ID_CategoriaGenerica = 2;
+
     private async Task Guardar()
     {
         Procesando = true;
@@ -89,7 +91,12 @@
                             var prefijo = prod.Descripcion.Length >= 2
                                 ? prod.Descripcion.Substring(0, 2).ToUpper()
                                 : prod.Descripcion.ToUpper();
-                            codigo = $"{prefijo}-{secuencial:D5}-{inicialesCategoria}";
+
+                            var sufijoCategoria = prod.ID_CategoriaProFK == ID_CategoriaGenerica
+                                ? "XX"
+                                : inicialesCategoria;
+
+                            codigo = $"{prefijo}-{secuencial:D5}-{sufijoCategoria}";
                             secuencial++;
                         }
 

@@ -224,6 +224,9 @@
             .ToList();
     }
 
+    private const decimal ID_CategoriaGenerica = 2;
+    private const decimal ID_ModeloGenerico = 2;
+
     private void AgregarProducto()
     {
         if (string.IsNullOrWhiteSpace(nuevoProductoNombre))
@@ -234,8 +237,8 @@
             ID_Productos = 0,
             CodigoExistente = "",
             Descripcion = nuevoProductoNombre.Trim(),
-            ID_CategoriaProFK = 0,
-            ID_ModelosFK = 0,
+            ID_CategoriaProFK = ID_CategoriaGenerica,
+            ID_ModelosFK = ID_ModeloGenerico,
             Seleccionado = true,
             Cantidad = 0
         });
