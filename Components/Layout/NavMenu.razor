@@ -67,7 +67,7 @@
 @code {
     private int productosSinConfigurar = 0;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
         const decimal ID_CategoriaGenerica = 2;
         productosSinConfigurar = await Context.Productos
