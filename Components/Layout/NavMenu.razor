@@ -1,6 +1,8 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
+@using HotelTools.Services
 @inject HotelContext Context
+@inject ProductoEstadoService ProductoEstado
 
 <MudAppBar Elevation="0" Color="Color.Dark">
     <MudText Typo="Typo.h6" Class="ml-3">HotelTools</MudText>
@@ -44,9 +46,16 @@
                     <MudNavGroup Title="Inventario" Icon="@Icons.Material.Filled.SettingsApplications" Expanded="false">
                     <MudNavLink Href="/listamodelos">Modelos</MudNavLink>
                     <MudNavLink Href="/listaproductos">
-                        <MudBadge Content="@productosSinConfigurar" Color="Color.Error" Overlap="true" Class="mr-2">
-                            Productos
-                        </MudBadge>
+                        @if (productosSinConfigurar > 0)
+                        {
+                            <MudBadge Content="@productosSinConfigurar" Color="Color.Error" Overlap="true" Class="mr-2">
+                                Productos
+                            </MudBadge>
+                        }
+                        else
+                        {
+                            @:Productos
+                        }
                     </MudNavLink>
                     <MudNavLink Href="/listacategoriaproductos">Categoria Productos</MudNavLink>
                 </MudNavGroup>
@@ -67,12 +76,22 @@
 @code {
     private int productosSinConfigurar = 0;
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
-        const decimal ID_CategoriaGenerica = 2;
-        productosSinConfigurar = await Context.Productos
-            .AsNoTracking()
-            .CountAsync(p => p.ID_CategoriaProFK == ID_CategoriaGenerica);
+        ProductoEstado.OnCambio += ActualizarBadge;
+        await ProductoEstado.Actualizar();
+        productosSinConfigurar = ProductoEstado.ProductosGenericos;
+    }
+
+    private void ActualizarBadge()
+    {
+        productosSinConfigurar = ProductoEstado.ProductosGenericos;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ProductoEstado.OnCambio -= ActualizarBadge;
     }
 }
 

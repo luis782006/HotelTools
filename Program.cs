@@ -7,6 +7,7 @@ using Serilog;
 using Serilog.Events;
 using MudBlazor.Charts;
 using HotelTools.Seguridad;
+using HotelTools.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
@@ -65,6 +66,7 @@ builder.Services.AddScoped<SeguridadSesion>();
 builder.Services.AddSingleton<SeguridadGlobal>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
 builder.Services.AddScoped<BrowserJS>();
+builder.Services.AddScoped<ProductoEstadoService>();
 
 builder.Services.AddRazorComponents();
 builder.Services.AddServerSideBlazor()
