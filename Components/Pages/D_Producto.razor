@@ -79,7 +79,7 @@
     [Parameter] public decimal ID { get; set; }
 
     private bool SoloLectura;
-    private bool success = true;
+    private bool success = false;
     private string[] errors = { };
 
     private Producto producto = new();
@@ -113,10 +113,9 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        if (firstRender && Modo != "Ver" && Modo != "Eliminar")
+        if (firstRender && !SoloLectura)
         {
             form?.Validate();
-            StateHasChanged();
         }
     }
 
