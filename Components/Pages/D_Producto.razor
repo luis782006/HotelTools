@@ -245,10 +245,7 @@
                     }
                 }
 
-                var sufijoCategoria = producto.ID_CategoriaProFK == ID_CategoriaGenerica
-                    ? "XX" : inicialesCatHab;
-
-                producto.Codigo = $"{prefijo}-{secuencial:D5}-{sufijoCategoria}";
+                producto.Codigo = $"{prefijo}-{secuencial:D5}-{inicialesCatHab}";
             }
 
             if (Modo == "Insertar")
