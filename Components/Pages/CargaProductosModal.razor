@@ -136,11 +136,14 @@
     private string ObtenerIniciales(string nombreCategoria)
     {
         if (string.IsNullOrWhiteSpace(nombreCategoria))
-            return "X";
+            return "XX";
 
         var palabras = nombreCategoria.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (palabras.Length == 1)
-            return palabras[0].Substring(0, Math.Min(1, palabras[0].Length)).ToUpper();
+        {
+            var palabra = palabras[0].ToUpper();
+            return palabra.Length >= 2 ? palabra.Substring(0, 2) : palabra;
+        }
 
         return string.Concat(palabras[0].Substring(0, 1), palabras[1].Substring(0, 1)).ToUpper();
     }
