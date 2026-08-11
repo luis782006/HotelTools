@@ -35,6 +35,7 @@
                         <MudTh Style="text-align:left;">Descripción</MudTh>
                         <MudTh Style="text-align:left;">Categoría</MudTh>
                         <MudTh Style="text-align:left;">Modelo</MudTh>
+                        <MudTh Style="text-align:left;">Habitación</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd Class="d-inline-flex justify-center">
@@ -47,11 +48,30 @@
                             <MudTooltip Text="Eliminar Producto">
                                 <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@((e) => AccionProducto(maxWidth, "Eliminar", @context.ID_Productos))" />
                             </MudTooltip>
+                            @if (!context.ID_HabitacionFK.HasValue)
+                            {
+                                <MudTooltip Text="Asignar a Habitación">
+                                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Assignment" Color="Color.Warning"
+                                        OnClick="@((e) => AsignarHabitacion(maxWidth, @context.ID_Productos))" />
+                                </MudTooltip>
+                            }
                         </MudTd>
                         <MudTd DataLabel="Codigo">@context.Codigo</MudTd>
                         <MudTd DataLabel="Descripcion">@context.Descripcion</MudTd>
                         <MudTd DataLabel="Categoria">@context.Categoria</MudTd>
                         <MudTd DataLabel="Modelo">@context.Modelo</MudTd>
+                        <MudTd DataLabel="Habitacion">
+                            @if (context.ID_HabitacionFK.HasValue)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                                    @context.Habitacion
+                                </MudChip>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Style="color: #888;">—</MudText>
+                            }
+                        </MudTd>
                     </RowTemplate>
                     <PagerContent>
                         <MudTablePager RowsPerPageString="Filas por Pagina." InfoFormat="@($"Filas {infoFormat}")" HorizontalAlignment="HorizontalAlignment.Center" PageSizeOptions="new int[] { 25, 50, 100 }" />
@@ -93,6 +113,8 @@
             .ToDictionaryAsync(c => c.ID_CategoriasPro, c => c.NombreCatProductos);
         modeloLookup = await Context.Modelos.AsNoTracking()
             .ToDictionaryAsync(m => m.ID_Modelos, m => m.NombreModelos);
+        var habitacionLookup = await Context.Habitaciones.AsNoTracking()
+            .ToDictionaryAsync(h => h.ID_NroHab, h => h.DescripcionHab);
 
         lstProductos = await Context.Productos.AsNoTracking()
             .OrderBy(p => p.Descripcion)
@@ -102,7 +124,8 @@
                 Codigo = p.Codigo,
                 Descripcion = p.Descripcion,
                 ID_CategoriaProFK = p.ID_CategoriaProFK,
-                ID_ModelosFK = p.ID_ModelosFK
+                ID_ModelosFK = p.ID_ModelosFK,
+                ID_HabitacionFK = p.ID_HabitacionFK
             })
             .ToListAsync();
 
@@ -114,6 +137,9 @@
             item.Modelo = modeloLookup.ContainsKey(item.ID_ModelosFK)
                 ? modeloLookup[item.ID_ModelosFK]
                 : "";
+            item.Habitacion = item.ID_HabitacionFK.HasValue
+                && habitacionLookup.TryGetValue(item.ID_HabitacionFK.Value, out var desc)
+                ? desc : "—";
         }
     }
 
@@ -150,6 +176,22 @@
         }
     }
 
+    private async Task AsignarHabitacion(DialogOptions options, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", "Asignar" },
+            { "ID", id }
+        };
+        var dialog = DialogService.Show<D_Producto>("ASIGNAR HABITACIÓN", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarDatos();
+            StateHasChanged();
+        }
+    }
+
     public class ProductoListDto
     {
         public decimal ID_Productos { get; set; }
@@ -157,7 +199,9 @@
         public string Descripcion { get; set; } = "";
         public decimal ID_CategoriaProFK { get; set; }
         public decimal ID_ModelosFK { get; set; }
+        public decimal? ID_HabitacionFK { get; set; }
         public string Categoria { get; set; } = "";
         public string Modelo { get; set; } = "";
+        public string Habitacion { get; set; } = "—";
     }
 }

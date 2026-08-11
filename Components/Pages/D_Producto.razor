@@ -9,19 +9,19 @@
     <DialogContent>
         <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
             <MudGrid>
-                <MudItem xs="12">
+                <MudItem xs="12" md="6">
                     <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
                         @bind-Value="producto.Codigo" Label="Código"
                         ReadOnly="@SoloLectura" Required="true" MaxLength="80"
                         RequiredError="El código es requerido" />
                 </MudItem>
-                <MudItem xs="12">
+                <MudItem xs="12" md="6">
                     <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
                         @bind-Value="producto.Descripcion" Label="Descripción"
                         ReadOnly="@SoloLectura" Required="true" MaxLength="60"
                         RequiredError="La descripción es requerida" />
                 </MudItem>
-                <MudItem xs="12">
+                <MudItem xs="12" md="6">
                     <MudSelect T="decimal" @bind-Value="producto.ID_CategoriaProFK" Margin="Margin.Dense"
                         Variant="Variant.Outlined" Label="Categoría" Disabled="@SoloLectura"
                         Required="true" RequiredError="Seleccione una categoría">
@@ -32,7 +32,7 @@
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12">
+                <MudItem xs="12" md="6">
                     <MudSelect T="decimal" @bind-Value="producto.ID_ModelosFK" Margin="Margin.Dense"
                         Variant="Variant.Outlined" Label="Modelo" Disabled="@SoloLectura"
                         Required="true" RequiredError="Seleccione un modelo">
@@ -48,6 +48,43 @@
                         @bind-Value="nroFacturaStr" Label="Nro. Factura (opcional)"
                         ReadOnly="@SoloLectura" Placeholder="Nro de Fact" />
                 </MudItem>
+
+                @if (Modo == "Asignar" || Modo == "Insertar")
+                {
+                    <MudItem xs="12">
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.subtitle2" Class="mb-2" Style="font-weight:600; color:#98989F;">
+                            Asignar a Habitación (opcional)
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="decimal" @bind-Value="categoriaHabitacionSeleccionada"
+                            Label="Categoría de Habitación" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            <MudSelectItem Value="0m">-- Todas --</MudSelectItem>
+                            @foreach (var cat in lstCategoriasHabitacion)
+                            {
+                                <MudSelectItem Value="@cat.ID_Categoria">@cat.TipoHab</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="decimal?" @bind-Value="producto.ID_HabitacionFK"
+                            Label="Habitación" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            <MudSelectItem Value="@((decimal?)null)">-- Sin asignar --</MudSelectItem>
+                            @foreach (var hab in lstHabitacionesFiltradas)
+                            {
+                                <MudSelectItem Value="@((decimal?)hab.ID_NroHab)">@hab.DescripcionHab</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    @if (producto.ID_HabitacionFK.HasValue || string.IsNullOrEmpty(producto.Codigo))
+                    {
+                        <MudItem xs="12">
+                            <MudCheckBox T="bool" @bind-Value="generarCodigo" Label="Generar código automáticamente"
+                                Color="Color.Primary" />
+                        </MudItem>
+                    }
+                }
             </MudGrid>
         </MudForm>
     </DialogContent>
@@ -90,6 +127,17 @@
 
     private List<CategoriaProducto> lstCategorias = new();
     private List<Modelo> lstModelos = new();
+    private List<CategoriaHabitacion> lstCategoriasHabitacion = new();
+    private List<Habitacion> lstHabitaciones = new();
+    private decimal categoriaHabitacionSeleccionada = 0m;
+    private bool generarCodigo = false;
+
+    private const decimal ID_CategoriaGenerica = 2;
+
+    private List<Habitacion> lstHabitacionesFiltradas =>
+        categoriaHabitacionSeleccionada == 0m
+            ? lstHabitaciones
+            : lstHabitaciones.Where(h => h.ID_CategoriasFK == categoriaHabitacionSeleccionada).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -101,6 +149,12 @@
         lstModelos = await Context.Modelos.AsNoTracking()
             .OrderBy(m => m.NombreModelos)
             .ToListAsync();
+        lstCategoriasHabitacion = await Context.CategoriaHabitaciones.AsNoTracking()
+            .OrderBy(c => c.TipoHab)
+            .ToListAsync();
+        lstHabitaciones = await Context.Habitaciones.AsNoTracking()
+            .OrderBy(h => h.DescripcionHab)
+            .ToListAsync();
 
         if (ID > 0)
         {
@@ -110,6 +164,11 @@
                 producto = p;
                 nroFacturaStr = producto.ID_NroFacturaFK?.ToString() ?? "";
             }
+        }
+
+        if (Modo == "Asignar")
+        {
+            SoloLectura = true;
         }
     }
 
@@ -163,6 +222,33 @@
             else
                 producto.ID_NroFacturaFK = null;
 
+            if (generarCodigo && (Modo == "Asignar" || string.IsNullOrEmpty(producto.Codigo)))
+            {
+                int secuencial = await Context.Productos.AsNoTracking()
+                    .MaxAsync(p => (int?)p.ID_Productos) ?? 0;
+                secuencial++;
+
+                var prefijo = producto.Descripcion.Length >= 2
+                    ? producto.Descripcion.Substring(0, 2).ToUpper()
+                    : producto.Descripcion.ToUpper();
+
+                string inicialesCatHab = "XX";
+                if (producto.ID_HabitacionFK.HasValue)
+                {
+                    var hab = lstHabitaciones.FirstOrDefault(h => h.ID_NroHab == producto.ID_HabitacionFK);
+                    if (hab != null)
+                    {
+                        var catHab = lstCategoriasHabitacion.FirstOrDefault(c => c.ID_Categoria == hab.ID_CategoriasFK);
+                        inicialesCatHab = ObtenerIniciales(catHab?.TipoHab ?? "");
+                    }
+                }
+
+                var sufijoCategoria = producto.ID_CategoriaProFK == ID_CategoriaGenerica
+                    ? "XX" : inicialesCatHab;
+
+                producto.Codigo = $"{prefijo}-{secuencial:D5}-{sufijoCategoria}";
+            }
+
             if (Modo == "Insertar")
             {
                 Context.Productos.Add(producto);
@@ -185,6 +271,18 @@
         {
             MostrarError(ex, "guardar");
         }
+    }
+
+    private string ObtenerIniciales(string nombreCategoria)
+    {
+        if (string.IsNullOrWhiteSpace(nombreCategoria))
+            return "X";
+
+        var palabras = nombreCategoria.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (palabras.Length == 1)
+            return palabras[0].Substring(0, Math.Min(1, palabras[0].Length)).ToUpper();
+
+        return string.Concat(palabras[0].Substring(0, 1), palabras[1].Substring(0, 1)).ToUpper();
     }
 
     private async Task ConfirmarEliminar()
