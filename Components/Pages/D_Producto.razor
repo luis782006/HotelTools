@@ -111,14 +111,6 @@
         }
     }
 
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender && !SoloLectura)
-        {
-            form?.Validate();
-        }
-    }
-
     private void MostrarError(Exception ex, string accion)
     {
         var inner = ex.InnerException?.Message ?? ex.Message;
