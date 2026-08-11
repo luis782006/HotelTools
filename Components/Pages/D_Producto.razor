@@ -79,7 +79,7 @@
                             }
                         </MudSelect>
                     </MudItem>
-                    @if (producto.ID_HabitacionFK.HasValue || string.IsNullOrEmpty(producto.Codigo))
+                    @if (Modo == "Asignar" || string.IsNullOrEmpty(producto.Codigo))
                     {
                         <MudItem xs="12">
                             <MudCheckBox T="bool" @bind-Value="generarCodigo" Label="Generar código automáticamente"
