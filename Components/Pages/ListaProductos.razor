@@ -2,6 +2,7 @@
 @attribute [Authorize(Policy = "ManageInventario")]
 
 @using Microsoft.EntityFrameworkCore
+@using HotelTools.Services
 
 <ValidaPermiso PermisoRequerido="ManageInventario" Objeto="ListaProductos" />
 
@@ -55,6 +56,13 @@
                                         OnClick="@((e) => AsignarHabitacion(maxWidth, @context.ID_Productos))" />
                                 </MudTooltip>
                             }
+                            else
+                            {
+                                <MudTooltip Text="Desasignar Habitación">
+                                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.AssignmentLate" Color="Color.Secondary"
+                                        OnClick="@((e) => DesasignarHabitacion(@context.ID_Productos))" />
+                                </MudTooltip>
+                            }
                         </MudTd>
                         <MudTd DataLabel="Codigo">@context.Codigo</MudTd>
                         <MudTd DataLabel="Descripcion">@context.Descripcion</MudTd>
@@ -94,6 +102,8 @@
 
     [Inject] private HotelContext Context { get; set; }
     [Inject] private IDialogService DialogService { get; set; }
+    [Inject] private ISnackbar Snackbar { get; set; }
+    [Inject] private ProductoEstadoService ProductoEstado { get; set; }
 
     private DialogOptions maxWidth = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
 
@@ -190,6 +200,40 @@
             await CargarDatos();
             StateHasChanged();
         }
+    }
+
+    private async Task DesasignarHabitacion(decimal id)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea desasignar la habitación de este producto?",
+            yesText: "Desasignar",
+            cancelText: "Cancelar");
+
+        if (confirm != true)
+            return;
+
+        var producto = await Context.Productos.FindAsync(id);
+        if (producto == null)
+            return;
+
+        producto.ID_HabitacionFK = null;
+
+        if (!string.IsNullOrEmpty(producto.Codigo))
+        {
+            var dashIndex = producto.Codigo.LastIndexOf('-');
+            if (dashIndex > 0)
+                producto.Codigo = producto.Codigo.Substring(0, dashIndex);
+        }
+
+        await Context.SaveChangesAsync();
+        await ProductoEstado.Actualizar();
+
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+        Snackbar.Add("Habitación desasignada correctamente", Severity.Success);
+
+        await CargarDatos();
+        StateHasChanged();
     }
 
     public class ProductoListDto
