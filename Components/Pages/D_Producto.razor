@@ -12,7 +12,9 @@
                 <MudItem xs="12" md="6">
                     <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
                         @bind-Value="producto.Codigo" Label="Código"
-                        ReadOnly="@SoloLectura" Required="true" MaxLength="80"
+                        ReadOnly="@SoloLectura"
+                        Required="@(!generarCodigo)"
+                        MaxLength="80"
                         RequiredError="El código es requerido" />
                 </MudItem>
                 <MudItem xs="12" md="6">
