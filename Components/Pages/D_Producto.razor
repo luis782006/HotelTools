@@ -1,7 +1,9 @@
 @using Microsoft.EntityFrameworkCore
+@using HotelTools.Services
 @inject HotelContext Context
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject ProductoEstadoService ProductoEstado
 
 <MudDialog>
     <DialogContent>
@@ -171,6 +173,8 @@
             }
 
             await Context.SaveChangesAsync();
+
+            await ProductoEstado.Actualizar();
 
             Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
             Snackbar.Add(Modo == "Insertar" ? "Producto creado correctamente" : "Producto actualizado correctamente", Severity.Success);
