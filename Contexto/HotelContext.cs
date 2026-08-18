@@ -36,6 +36,9 @@ namespace HotelTools.Models
         public virtual DbSet<Modelo> Modelos { get; set; }
         public virtual DbSet<Producto> Productos { get; set; }
         public virtual DbSet<HabitacionProductos> HabitacionProductos { get; set; }
+        public virtual DbSet<TipoProducto> TipoProductos { get; set; }
+        public virtual DbSet<PaqueteProducto> PaqueteProductos { get; set; }
+        public virtual DbSet<PaqueteProductoDetalle> PaqueteProductoDetalles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -173,6 +176,34 @@ namespace HotelTools.Models
                 entity.HasKey(c => c.ID_HabProductos);
                 entity.Property(e => e.ID_HabProductos).ValueGeneratedOnAdd();
                 entity.ToTable("HabitacionProductos", "Inventarios");
+            });
+
+            modelBuilder.Entity<TipoProducto>(entity =>
+            {
+                entity.HasKey(e => e.ID_TipoProducto);
+                entity.Property(e => e.ID_TipoProducto).ValueGeneratedOnAdd();
+                entity.Property(e => e.Nombre).HasMaxLength(60);
+                entity.Property(e => e.Descripcion).HasMaxLength(200);
+                entity.ToTable("TipoProducto", "Inventarios");
+            });
+
+            modelBuilder.Entity<PaqueteProducto>(entity =>
+            {
+                entity.HasKey(e => e.ID_Paquete);
+                entity.Property(e => e.ID_Paquete).ValueGeneratedOnAdd();
+                entity.Property(e => e.Nombre).HasMaxLength(60);
+                entity.ToTable("PaqueteProducto", "Inventarios");
+            });
+
+            modelBuilder.Entity<PaqueteProductoDetalle>(entity =>
+            {
+                entity.HasKey(e => e.ID_Detalle);
+                entity.Property(e => e.ID_Detalle).ValueGeneratedOnAdd();
+                entity.Property(e => e.Cantidad);
+                entity.HasOne(e => e.Paquete).WithMany().HasForeignKey(e => e.ID_PaqueteFK)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.TipoProducto).WithMany().HasForeignKey(e => e.ID_TipoProductoFK);
+                entity.ToTable("PaqueteProductoDetalle", "Inventarios");
             });
         }
     }

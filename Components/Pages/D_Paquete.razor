@@ -1,0 +1,249 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="paquete.Nombre" Label="Nombre del Paquete"
+                        ReadOnly="@SoloLectura" Required="true" MaxLength="60"
+                        RequiredError="El nombre es requerido" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="decimal" @bind-Value="paquete.ID_CategoriaHabitacionFK" Margin="Margin.Dense"
+                        Variant="Variant.Outlined" Label="Categoría de Habitación" Disabled="@SoloLectura"
+                        Required="true" RequiredError="Seleccione una categoría">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                        @foreach (var c in lstCategoriasHabitacion)
+                        {
+                            <MudSelectItem T="decimal" Value="@c.ID_Categoria">@c.TipoHab</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudDivider Class="my-2" />
+                    <MudText Typo="Typo.subtitle2" Class="mb-2" Style="font-weight:600; color:#98989F;">
+                        Productos del paquete
+                    </MudText>
+                </MudItem>
+
+                @if (lstTipoProductos.Count == 0)
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.body2" Color="Color.Warning">
+                            No hay productos en el catálogo. Cree productos desde "Listado de Productos" primero.
+                        </MudText>
+                    </MudItem>
+                }
+                else
+                {
+                    <MudItem xs="12">
+                        <MudStack Class="mb-2" Style="max-height: 360px; overflow-y: auto;">
+                            @foreach (var tp in lstTipoProductos)
+                            {
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Class="pa-2"
+                                          Style="border: 1px solid #3a3a4a; border-radius: 8px; background: #1e1e2e;">
+                                    <MudCheckBox T="bool" @bind-Value="tp.Seleccionado" Color="Color.Primary"
+                                                 Disabled="@SoloLectura" />
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.body1" Style="color: #C1C1C4;">@tp.Nombre</MudText>
+                                        <MudText Typo="Typo.caption" Style="color: #888;">@tp.Descripcion</MudText>
+                                        <MudText Typo="Typo.caption" Style="color: #888;">@tp.Categoria · @tp.Modelo</MudText>
+                                    </MudStack>
+                                    <MudSpacer />
+                                    <MudNumericField T="int" @bind-Value="tp.Cantidad" Label="Cantidad"
+                                                     Margin="Margin.Dense" Variant="Variant.Outlined"
+                                                     Min="1" Max="999" Disabled="@(SoloLectura || !tp.Seleccionado)"
+                                                     Style="width: 110px;" />
+                                </MudStack>
+                            }
+                        </MudStack>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo != "Ver")
+        {
+            <MudButton OnClick="ConfirmarGuardar" Disabled="!success || paquete.ID_CategoriaHabitacionFK == 0m"
+                Color="Color.Success" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Save">
+                Guardar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Editar";
+    [Parameter] public decimal ID_Paquete { get; set; }
+    [Parameter] public decimal CategoriaHabitacionFK { get; set; }
+
+    private bool SoloLectura;
+    private bool success = false;
+    private string[] errors = { };
+
+    private PaqueteProducto paquete = new();
+    private MudForm? form;
+
+    private List<CategoriaHabitacion> lstCategoriasHabitacion = new();
+    private List<TipoProductoSeleccionDto> lstTipoProductos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver";
+
+        lstCategoriasHabitacion = await Context.CategoriaHabitaciones.AsNoTracking()
+            .OrderBy(c => c.TipoHab)
+            .ToListAsync();
+
+        var tipoProductos = await Context.TipoProductos.AsNoTracking()
+            .OrderBy(t => t.Nombre)
+            .ToListAsync();
+
+        var categoriaLookup = await Context.CategoriasProductos.AsNoTracking()
+            .ToDictionaryAsync(c => c.ID_CategoriasPro, c => c.NombreCatProductos);
+        var modeloLookup = await Context.Modelos.AsNoTracking()
+            .ToDictionaryAsync(m => m.ID_Modelos, m => m.NombreModelos);
+
+        if (ID_Paquete > 0)
+        {
+            var p = await Context.PaqueteProductos.FindAsync(ID_Paquete);
+            if (p != null)
+                paquete = p;
+
+            var detalles = await Context.PaqueteProductoDetalles.AsNoTracking()
+                .Where(d => d.ID_PaqueteFK == ID_Paquete)
+                .ToListAsync();
+
+            lstTipoProductos = tipoProductos.Select(t => new TipoProductoSeleccionDto
+            {
+                ID_TipoProducto = t.ID_TipoProducto,
+                Nombre = t.Nombre,
+                Descripcion = t.Descripcion ?? "",
+                Categoria = categoriaLookup.ContainsKey(t.ID_CategoriaProFK) ? categoriaLookup[t.ID_CategoriaProFK] : "",
+                Modelo = modeloLookup.ContainsKey(t.ID_ModelosFK) ? modeloLookup[t.ID_ModelosFK] : "",
+                Seleccionado = detalles.Any(d => d.ID_TipoProductoFK == t.ID_TipoProducto),
+                Cantidad = detalles.FirstOrDefault(d => d.ID_TipoProductoFK == t.ID_TipoProducto)?.Cantidad ?? 1
+            }).ToList();
+        }
+        else
+        {
+            paquete.ID_CategoriaHabitacionFK = CategoriaHabitacionFK;
+
+            lstTipoProductos = tipoProductos.Select(t => new TipoProductoSeleccionDto
+            {
+                ID_TipoProducto = t.ID_TipoProducto,
+                Nombre = t.Nombre,
+                Descripcion = t.Descripcion ?? "",
+                Categoria = categoriaLookup.ContainsKey(t.ID_CategoriaProFK) ? categoriaLookup[t.ID_CategoriaProFK] : "",
+                Modelo = modeloLookup.ContainsKey(t.ID_ModelosFK) ? modeloLookup[t.ID_ModelosFK] : "",
+                Seleccionado = false,
+                Cantidad = 1
+            }).ToList();
+        }
+    }
+
+    private void MostrarError(Exception ex, string accion)
+    {
+        var inner = ex.InnerException?.Message ?? ex.Message;
+        var esViolacionFK = inner.Contains("REFERENCE", StringComparison.OrdinalIgnoreCase)
+            || inner.Contains("constraint", StringComparison.OrdinalIgnoreCase);
+        Snackbar.Add(
+            esViolacionFK
+                ? "No se pudo guardar el paquete porque está asociado a otros registros."
+                : "No se pudo guardar el paquete. Verifique los datos e intente nuevamente.",
+            Severity.Error);
+    }
+
+    private async Task ConfirmarGuardar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea guardar los cambios?",
+            yesText: "Guardar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Guardar();
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (paquete.ID_CategoriaHabitacionFK == 0m)
+            {
+                Snackbar.Add("Debe seleccionar una categoría de habitación", Severity.Error);
+                return;
+            }
+
+            if (Modo == "Insertar")
+            {
+                Context.PaqueteProductos.Add(paquete);
+                await Context.SaveChangesAsync();
+            }
+            else
+            {
+                Context.PaqueteProductos.Update(paquete);
+                await Context.SaveChangesAsync();
+            }
+
+            var detallesViejos = await Context.PaqueteProductoDetalles.AsNoTracking()
+                .Where(d => d.ID_PaqueteFK == paquete.ID_Paquete)
+                .ToListAsync();
+            foreach (var d in detallesViejos)
+            {
+                var detalle = new PaqueteProductoDetalle { ID_Detalle = d.ID_Detalle };
+                Context.PaqueteProductoDetalles.Remove(detalle);
+            }
+            await Context.SaveChangesAsync();
+
+            foreach (var tp in lstTipoProductos.Where(x => x.Seleccionado && x.Cantidad > 0))
+            {
+                Context.PaqueteProductoDetalles.Add(new PaqueteProductoDetalle
+                {
+                    ID_PaqueteFK = paquete.ID_Paquete,
+                    ID_TipoProductoFK = tp.ID_TipoProducto,
+                    Cantidad = tp.Cantidad
+                });
+            }
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add(Modo == "Insertar" ? "Paquete creado correctamente" : "Paquete actualizado correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(paquete.ID_Paquete));
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex, "guardar");
+        }
+    }
+
+    void Cancelar() => MudDialog.Cancel();
+
+    public class TipoProductoSeleccionDto
+    {
+        public decimal ID_TipoProducto { get; set; }
+        public string Nombre { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public string Categoria { get; set; } = "";
+        public string Modelo { get; set; } = "";
+        public bool Seleccionado { get; set; }
+        public int Cantidad { get; set; } = 1;
+    }
+}
