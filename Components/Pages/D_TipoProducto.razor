@@ -1,0 +1,219 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="tipoProducto.Nombre" Label="Nombre"
+                        ReadOnly="@SoloLectura" Required="true" MaxLength="60"
+                        RequiredError="El nombre es requerido" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
+                        @bind-Value="descripcion" Label="Descripción"
+                        ReadOnly="@SoloLectura" MaxLength="200" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="decimal" @bind-Value="tipoProducto.ID_CategoriaProFK" Margin="Margin.Dense"
+                        Variant="Variant.Outlined" Label="Categoría" Disabled="@SoloLectura"
+                        Required="true" RequiredError="Seleccione una categoría">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                        @foreach (var c in lstCategorias)
+                        {
+                            <MudSelectItem T="decimal" Value="@c.ID_CategoriasPro">@c.NombreCatProductos</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudSelect T="decimal" @bind-Value="tipoProducto.ID_ModelosFK" Margin="Margin.Dense"
+                        Variant="Variant.Outlined" Label="Modelo" Disabled="@SoloLectura"
+                        Required="true" RequiredError="Seleccione un modelo">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                        @foreach (var m in lstModelos)
+                        {
+                            <MudSelectItem T="decimal" Value="@m.ID_Modelos">@m.NombreModelos</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo == "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarEliminar"
+                Color="Color.Error" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Delete">
+                Eliminar
+            </MudButton>
+        }
+        @if (Modo != "Ver" && Modo != "Eliminar")
+        {
+            <MudButton OnClick="ConfirmarGuardar" Disabled="!success || tipoProducto.ID_CategoriaProFK == 0m || tipoProducto.ID_ModelosFK == 0m"
+                Color="Color.Success" Variant="Variant.Filled"
+                StartIcon="@Icons.Material.Filled.Save">
+                Guardar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+
+    private bool SoloLectura;
+    private bool success = false;
+    private string[] errors = { };
+
+    private TipoProducto tipoProducto = new();
+    private MudForm? form;
+    private string descripcion = "";
+
+    private List<CategoriaProducto> lstCategorias = new();
+    private List<Modelo> lstModelos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver" || Modo == "Eliminar";
+
+        lstCategorias = await Context.CategoriasProductos.AsNoTracking()
+            .OrderBy(c => c.NombreCatProductos)
+            .ToListAsync();
+        lstModelos = await Context.Modelos.AsNoTracking()
+            .OrderBy(m => m.NombreModelos)
+            .ToListAsync();
+
+        if (ID > 0)
+        {
+            var t = await Context.TipoProductos.FindAsync(ID);
+            if (t != null)
+            {
+                tipoProducto = t;
+                descripcion = tipoProducto.Descripcion ?? "";
+            }
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Modo != "Ver" && Modo != "Eliminar")
+        {
+            form?.Validate();
+            StateHasChanged();
+        }
+    }
+
+    private void MostrarError(Exception ex, string accion)
+    {
+        var inner = ex.InnerException?.Message ?? ex.Message;
+        var esViolacionFK = inner.Contains("REFERENCE", StringComparison.OrdinalIgnoreCase)
+            || inner.Contains("constraint", StringComparison.OrdinalIgnoreCase);
+        Snackbar.Add(
+            esViolacionFK
+                ? (accion == "eliminar"
+                    ? "No se puede eliminar el registro porque está asociado a otros registros."
+                    : "No se pudo guardar el registro porque ya está asociado a otros registros.")
+                : (accion == "eliminar"
+                    ? "No se pudo eliminar el registro. Intente nuevamente."
+                    : "No se pudo guardar el registro. Verifique los datos e intente nuevamente."),
+            Severity.Error);
+    }
+
+    private async Task ConfirmarGuardar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar",
+            "¿Desea guardar los cambios?",
+            yesText: "Guardar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Guardar();
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            if (tipoProducto.ID_CategoriaProFK == 0m)
+            {
+                Snackbar.Add("Debe seleccionar una categoría", Severity.Error);
+                return;
+            }
+            if (tipoProducto.ID_ModelosFK == 0m)
+            {
+                Snackbar.Add("Debe seleccionar un modelo", Severity.Error);
+                return;
+            }
+
+            tipoProducto.Descripcion = string.IsNullOrWhiteSpace(descripcion) ? null : descripcion.Trim();
+
+            if (Modo == "Insertar")
+            {
+                Context.TipoProductos.Add(tipoProducto);
+            }
+            else
+            {
+                Context.TipoProductos.Update(tipoProducto);
+            }
+
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add(Modo == "Insertar" ? "Producto creado correctamente" : "Producto actualizado correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex, "guardar");
+        }
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Confirmar Eliminación",
+            "¿Está seguro de eliminar este producto?",
+            yesText: "Eliminar",
+            cancelText: "Cancelar");
+
+        if (confirm == true)
+        {
+            await Eliminar();
+        }
+    }
+
+    private async Task Eliminar()
+    {
+        try
+        {
+            Context.TipoProductos.Remove(tipoProducto);
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Producto eliminado correctamente", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex, "eliminar");
+        }
+    }
+
+    void Cancelar() => MudDialog.Cancel();
+}

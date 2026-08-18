@@ -1,5 +1,6 @@
 @using Microsoft.EntityFrameworkCore
 @using HotelTools.Services
+@using HotelTools.Utils
 @inject HotelContext Context
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -226,10 +227,6 @@
 
             if (generarCodigo && (Modo == "Asignar" || string.IsNullOrEmpty(producto.Codigo)))
             {
-                int secuencial = await Context.Productos.AsNoTracking()
-                    .MaxAsync(p => (int?)p.ID_Productos) ?? 0;
-                secuencial++;
-
                 var prefijo = producto.Descripcion.Length >= 2
                     ? producto.Descripcion.Substring(0, 2).ToUpper()
                     : producto.Descripcion.ToUpper();
@@ -245,7 +242,7 @@
                     }
                 }
 
-                producto.Codigo = $"{prefijo}-{secuencial:D5}-{inicialesCatHab}";
+                producto.Codigo = await CodigoProductoHelper.GenerarCodigoUnico(Context, prefijo, inicialesCatHab);
             }
 
             if (Modo == "Insertar")

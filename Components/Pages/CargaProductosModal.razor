@@ -1,4 +1,5 @@
 @using Microsoft.EntityFrameworkCore
+@using HotelTools.Utils
 
 <MudDialog>
     <DialogContent>
@@ -30,10 +31,6 @@
                 <MudTd DataLabel="Total">@(Habitaciones.Count * context.Cantidad)</MudTd>
             </RowTemplate>
         </MudTable>
-
-        <MudAlert Severity="Severity.Info" Class="mt-4">
-            Se crearán @(Productos.Sum(p => p.Cantidad) * Habitaciones.Count) registros en la tabla Productos.
-        </MudAlert>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
@@ -74,9 +71,6 @@
 
         try
         {
-            int secuencial = await Context.Productos.AsNoTracking().MaxAsync(p => (int?)p.ID_Productos) ?? 0;
-            secuencial++;
-
             var inicialesCategoria = ObtenerIniciales(CategoriaHabitacion?.TipoHab ?? "");
 
             foreach (var hab in Habitaciones)
@@ -96,8 +90,7 @@
                                 ? "XX"
                                 : inicialesCategoria;
 
-                            codigo = $"{prefijo}-{secuencial:D5}-{sufijoCategoria}";
-                            secuencial++;
+                            codigo = await CodigoProductoHelper.GenerarCodigoUnico(Context, prefijo, sufijoCategoria);
                         }
 
                         var nuevoProducto = new Producto

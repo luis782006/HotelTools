@@ -22,11 +22,39 @@
             <MudSelect T="decimal" @bind-Value="categoriaSeleccionada" Label="Categoría de Habitación"
                        Variant="Variant.Outlined" Class="mb-4" AdornmentIcon="@Icons.Material.Filled.FilterList"
                        SelectedValuesChanged="@OnCategoriaChanged">
+                <MudSelectItem Value="0m">-- Seleccione una categoría --</MudSelectItem>
                 @foreach (var cat in lstCategorias)
                 {
                     <MudSelectItem Value="@cat.ID_Categoria">@cat.TipoHab</MudSelectItem>
                 }
             </MudSelect>
+
+            @* Selector de paquete *@
+            <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight:600;">Paquete</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Wrap="Wrap.Wrap">
+                <MudSelect T="decimal" @bind-Value="paqueteSeleccionado" Label="Paquete de productos"
+                           Variant="Variant.Outlined" AdornmentIcon="@Icons.Material.Filled.Inventory"
+                           Class="mr-2" Style="min-width: 280px; max-width: 400px;"
+                           SelectedValuesChanged="@OnPaqueteChanged">
+                    @if (lstPaquetes.Count == 0)
+                    {
+                        <MudSelectItem Value="0m">-- No hay paquetes para esta categoría --</MudSelectItem>
+                    }
+                    else
+                    {
+                        <MudSelectItem Value="0m">-- Seleccione un paquete --</MudSelectItem>
+                        @foreach (var p in lstPaquetes)
+                        {
+                            <MudSelectItem Value="@p.ID_Paquete">@p.Nombre</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+
+                <MudTooltip Text="Administrar paquetes">
+                    <MudIconButton Size="Size.Medium" Icon="@Icons.Material.Filled.Edit" Color="Color.Info"
+                                   OnClick="@AbrirAdministradorPaquetes" />
+                </MudTooltip>
+            </MudStack>
 
             @* Habitaciones *@
             <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight:600;">Habitaciones</MudText>
@@ -54,62 +82,66 @@
 
             <MudDivider Class="my-4" />
 
-            @* Agregar producto + Generar códigos *@
-            <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight:600;">Productos</MudText>
-            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Wrap="Wrap.Wrap">
-                <MudTextField T="string" @bind-Value="nuevoProductoNombre" Label="Nuevo producto"
-                              Variant="Variant.Outlined" Adornment="Adornment.End"
-                              AdornmentIcon="@Icons.Material.Filled.Add"
-                              OnAdornmentClick="AgregarProducto"
-                              Placeholder="Ej: Pava Electrica"
-                              Style="max-width: 350px;" />
+            @* Productos del paquete *@
+            <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight:600;">Productos del paquete</MudText>
 
-                <MudRadioGroup T="bool" @bind-Value="generarCodigos">
+            @if (lstProductos.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Warning" Class="mb-4">
+                    Seleccione un paquete para cargar sus productos.
+                </MudText>
+            }
+            else
+            {
+                @* Checkbox seleccionar todos los productos *@
+                <MudCheckBox T="bool" @bind-Value="todosProductosMarcados" Label="Marcar/Desmarcar todos los productos"
+                             Color="Color.Primary" Class="mb-2" />
+
+                @* Generar códigos *@
+                <MudRadioGroup T="bool" @bind-Value="generarCodigos" Class="mb-2">
                     <MudRadio T="bool" Value="true" Color="Color.Primary">Generar Código</MudRadio>
                     <MudRadio T="bool" Value="false" Color="Color.Primary">No Generar Código</MudRadio>
                 </MudRadioGroup>
-            </MudStack>
 
-            @* Checkbox seleccionar todos los productos *@
-            <MudCheckBox T="bool" @bind-Value="todosProductosMarcados" Label="Marcar/Desmarcar todos los productos"
-                         Color="Color.Primary" Class="mb-2" />
+                @* Lista de productos *@
+                <MudStack Class="mb-4" Style="max-height: 400px; overflow-y: auto;">
+                    @foreach (var prod in lstProductos)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="pa-2"
+                                  Style="border: 1px solid #3a3a4a; border-radius: 8px; background: #1e1e2e;">
 
-            @* Lista de productos *@
-            <MudStack Class="mb-4" Style="max-height: 400px; overflow-y: auto;">
-                @foreach (var prod in lstProductos)
-                {
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Class="pa-2"
-                              Style="border: 1px solid #3a3a4a; border-radius: 8px; background: #1e1e2e;">
+                            <MudCheckBox T="bool" @bind-Value="prod.Seleccionado" Color="Color.Primary" />
 
-                        <MudCheckBox T="bool" @bind-Value="prod.Seleccionado" Color="Color.Primary" />
+                            <MudTooltip Text="@(string.IsNullOrEmpty(prod.DescripcionDetalle) ? "Sin descripción" : prod.DescripcionDetalle)" Placement="Placement.Top">
+                                <MudText Typo="Typo.body1" Style="color: #C1C1C4; min-width: 200px;">
+                                    @prod.Descripcion
+                                    @if (!string.IsNullOrEmpty(prod.Categoria))
+                                    {
+                                        <MudText Typo="Typo.caption" Style="color: #888;"> (@prod.Categoria · @prod.Modelo)</MudText>
+                                    }
+                                </MudText>
+                            </MudTooltip>
 
-                        <MudText Typo="Typo.body1" Style="color: #C1C1C4; min-width: 200px;">
-                            @prod.Descripcion
-                            @if (!string.IsNullOrEmpty(prod.CodigoExistente))
-                            {
-                                <MudText Typo="Typo.caption" Style="color: #888;"> (@prod.CodigoExistente)</MudText>
-                            }
-                        </MudText>
+                            <MudSpacer />
 
-                        <MudSpacer />
+                            <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+                                <MudButton OnClick="@(() => prod.Cantidad = Math.Max(1, prod.Cantidad - 1))"
+                                           Disabled="@(!prod.Seleccionado)">-</MudButton>
+                                <MudButton Disabled="true" Style="min-width: 40px;">@prod.Cantidad</MudButton>
+                                <MudButton OnClick="@(() => prod.Cantidad++)"
+                                           Disabled="@(!prod.Seleccionado)">+</MudButton>
+                            </MudButtonGroup>
 
-                        <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
-                            <MudButton OnClick="@(() => prod.Cantidad = Math.Max(0, prod.Cantidad - 1))"
-                                       Disabled="@(!prod.Seleccionado)">-</MudButton>
-                            <MudButton Disabled="true" Style="min-width: 40px;">@prod.Cantidad</MudButton>
-                            <MudButton OnClick="@(() => prod.Cantidad++)"
-                                       Disabled="@(!prod.Seleccionado)">+</MudButton>
-                        </MudButtonGroup>
-
-                    </MudStack>
-                }
-            </MudStack>
+                        </MudStack>
+                    }
+                </MudStack>
+            }
 
             @* Botón cargar *@
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Inventory"
                        Disabled="@(lstHabitacionesSeleccionadas.Count == 0 || lstProductosSeleccionados.Count == 0)"
                        OnClick="AbrirModalCarga" Class="mt-2">
-                Cargar Productos (@lstHabitacionesSeleccionadas.Count hab, @lstProductosSeleccionados.Count productos)
+                Carga de Productos (@lstHabitacionesSeleccionadas.Count hab, @lstProductosSeleccionados.Count productos)
             </MudButton>
 
         </MudPaper>
@@ -123,12 +155,13 @@
 
     private bool Cargando = true;
     private List<CategoriaHabitacionDto> lstCategorias = new();
+    private List<PaqueteDto> lstPaquetes = new();
     private List<HabitacionSeleccionDto> lstHabitacionesTodas = new();
     private List<HabitacionSeleccionDto> lstHabitacionesFiltradas = new();
     private List<ProductoCargaDto> lstProductos = new();
     private decimal categoriaSeleccionada;
+    private decimal paqueteSeleccionado;
     private bool generarCodigos = true;
-    private string nuevoProductoNombre = "";
     private List<decimal> habitacionesSeleccionadas = new();
 
     private bool todasSeleccionadas
@@ -178,9 +211,6 @@
             })
             .ToListAsync();
 
-        if (lstCategorias.Count > 0)
-            categoriaSeleccionada = lstCategorias.First().ID_Categoria;
-
         lstHabitacionesTodas = await Context.Habitaciones.AsNoTracking()
             .OrderBy(h => h.DescripcionHab)
             .Select(h => new HabitacionSeleccionDto
@@ -191,27 +221,87 @@
             })
             .ToListAsync();
 
-        lstProductos = await Context.Productos.AsNoTracking()
-            .Where(p => p.ID_HabitacionFK == null)
-            .Select(p => new ProductoCargaDto
-            {
-                ID_Productos = p.ID_Productos,
-                CodigoExistente = p.Codigo,
-                Descripcion = p.Descripcion ?? "",
-                ID_CategoriaProFK = p.ID_CategoriaProFK,
-                ID_ModelosFK = p.ID_ModelosFK,
-                Seleccionado = true,
-                Cantidad = 0
-            })
-            .ToListAsync();
-
+        await CargarPaquetes();
         FiltrarHabitaciones();
         Cargando = false;
     }
 
-    private void OnCategoriaChanged()
+    private async Task CargarPaquetes()
     {
+        if (categoriaSeleccionada == 0m)
+        {
+            lstPaquetes.Clear();
+            paqueteSeleccionado = 0m;
+            await CargarProductosPaquete();
+            return;
+        }
+
+        lstPaquetes = await Context.PaqueteProductos.AsNoTracking()
+            .Where(p => p.ID_CategoriaHabitacionFK == categoriaSeleccionada)
+            .OrderBy(p => p.Nombre)
+            .Select(p => new PaqueteDto
+            {
+                ID_Paquete = p.ID_Paquete,
+                Nombre = p.Nombre
+            })
+            .ToListAsync();
+
+        if (lstPaquetes.Count == 0)
+            paqueteSeleccionado = 0m;
+        else if (!lstPaquetes.Any(p => p.ID_Paquete == paqueteSeleccionado))
+            paqueteSeleccionado = lstPaquetes.First().ID_Paquete;
+
+        await CargarProductosPaquete();
+    }
+
+    private async Task CargarProductosPaquete()
+    {
+        lstProductos = new();
+
+        if (paqueteSeleccionado == 0m)
+            return;
+
+        var categoriaLookup = await Context.CategoriasProductos.AsNoTracking()
+            .ToDictionaryAsync(c => c.ID_CategoriasPro, c => c.NombreCatProductos);
+        var modeloLookup = await Context.Modelos.AsNoTracking()
+            .ToDictionaryAsync(m => m.ID_Modelos, m => m.NombreModelos);
+
+        lstProductos = await Context.PaqueteProductoDetalles.AsNoTracking()
+            .Where(d => d.ID_PaqueteFK == paqueteSeleccionado)
+            .Select(d => new ProductoCargaDto
+            {
+                ID_TipoProducto = d.ID_TipoProductoFK,
+                Descripcion = d.TipoProducto.Nombre,
+                DescripcionDetalle = d.TipoProducto.Descripcion ?? "",
+                ID_CategoriaProFK = d.TipoProducto.ID_CategoriaProFK,
+                ID_ModelosFK = d.TipoProducto.ID_ModelosFK,
+                Cantidad = d.Cantidad,
+                Seleccionado = true
+            })
+            .ToListAsync();
+
+        foreach (var item in lstProductos)
+        {
+            item.Categoria = categoriaLookup.ContainsKey(item.ID_CategoriaProFK)
+                ? categoriaLookup[item.ID_CategoriaProFK]
+                : "";
+            item.Modelo = modeloLookup.ContainsKey(item.ID_ModelosFK)
+                ? modeloLookup[item.ID_ModelosFK]
+                : "";
+        }
+    }
+
+    private async Task OnCategoriaChanged()
+    {
+        paqueteSeleccionado = 0m;
         FiltrarHabitaciones();
+        await CargarPaquetes();
+        StateHasChanged();
+    }
+
+    private async Task OnPaqueteChanged()
+    {
+        await CargarProductosPaquete();
         StateHasChanged();
     }
 
@@ -224,27 +314,75 @@
             .ToList();
     }
 
-    private const decimal ID_CategoriaGenerica = 2;
-    private const decimal ID_ModeloGenerico = 2;
-
-    private void AgregarProducto()
+    private async Task AbrirAdministradorPaquetes()
     {
-        if (string.IsNullOrWhiteSpace(nuevoProductoNombre))
+        if (lstPaquetes.Count == 0)
+        {
+            await AbrirEditarPaquete(0m, categoriaSeleccionada);
+            return;
+        }
+
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var parametros = new DialogParameters
+        {
+            { "Paquetes", lstPaquetes.Select(p => new PaqueteOpcionDto { ID_Paquete = p.ID_Paquete, Nombre = p.Nombre }).ToList() }
+        };
+
+        var dialog = DialogService.Show<SeleccionarPaqueteDialog>(
+            "Administrar Paquetes",
+            parametros,
+            options);
+
+        var result = await dialog.Result;
+        if (result == null || result.Canceled || result.Data == null)
             return;
 
-        lstProductos.Add(new ProductoCargaDto
+        var decision = (PaqueteOpcionDto)result.Data;
+        if (decision.ID_Paquete == 0m)
         {
-            ID_Productos = 0,
-            CodigoExistente = "",
-            Descripcion = nuevoProductoNombre.Trim(),
-            ID_CategoriaProFK = ID_CategoriaGenerica,
-            ID_ModelosFK = ID_ModeloGenerico,
-            Seleccionado = true,
-            Cantidad = 0
-        });
+            await AbrirEditarPaquete(0m, categoriaSeleccionada);
+        }
+        else if (decision.Accion == "Editar")
+        {
+            await AbrirEditarPaquete(decision.ID_Paquete, categoriaSeleccionada);
+        }
+        else
+        {
+            paqueteSeleccionado = decision.ID_Paquete;
+            await CargarProductosPaquete();
+            StateHasChanged();
+        }
+    }
 
-        nuevoProductoNombre = "";
-        StateHasChanged();
+    private async Task AbrirEditarPaquete(decimal idPaquete, decimal categoriaHab)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", idPaquete > 0 ? "Editar" : "Insertar" },
+            { "ID_Paquete", idPaquete },
+            { "CategoriaHabitacionFK", categoriaHab }
+        };
+
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = DialogService.Show<D_Paquete>(
+            (idPaquete > 0 ? "EDITAR" : "NUEVO") + " PAQUETE",
+            parameters,
+            options);
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await CargarPaquetes();
+
+            if (result.Data is decimal idGuardado)
+            {
+                paqueteSeleccionado = idGuardado;
+                await CargarProductosPaquete();
+            }
+
+            StateHasChanged();
+        }
     }
 
     private async Task AbrirModalCarga()
@@ -266,37 +404,31 @@
         var result = await dialog.Result;
         if (!result.Canceled)
         {
-            await RecargarDatos();
+            BlanquearVentana();
         }
     }
 
-    private async Task RecargarDatos()
+    private void BlanquearVentana()
     {
-        Cargando = true;
+        categoriaSeleccionada = 0m;
+        paqueteSeleccionado = 0m;
+        lstPaquetes = new();
+        lstProductos = new();
+        lstHabitacionesFiltradas = new();
+        habitacionesSeleccionadas = new();
         StateHasChanged();
-
-        lstProductos = await Context.Productos.AsNoTracking()
-            .Where(p => p.ID_HabitacionFK == null)
-            .Select(p => new ProductoCargaDto
-            {
-                ID_Productos = p.ID_Productos,
-                CodigoExistente = p.Codigo,
-                Descripcion = p.Descripcion ?? "",
-                ID_CategoriaProFK = p.ID_CategoriaProFK,
-                ID_ModelosFK = p.ID_ModelosFK,
-                Seleccionado = true,
-                Cantidad = 0
-            })
-            .ToListAsync();
-
-        FiltrarHabitaciones();
-        Cargando = false;
     }
 
     public class CategoriaHabitacionDto
     {
         public decimal ID_Categoria { get; set; }
         public string TipoHab { get; set; } = "";
+    }
+
+    public class PaqueteDto
+    {
+        public decimal ID_Paquete { get; set; }
+        public string Nombre { get; set; } = "";
     }
 
     public class HabitacionSeleccionDto
@@ -308,12 +440,21 @@
 
     public class ProductoCargaDto
     {
-        public decimal ID_Productos { get; set; }
-        public string CodigoExistente { get; set; } = "";
+        public decimal ID_TipoProducto { get; set; }
         public string Descripcion { get; set; } = "";
+        public string DescripcionDetalle { get; set; } = "";
+        public string Categoria { get; set; } = "";
+        public string Modelo { get; set; } = "";
         public decimal ID_CategoriaProFK { get; set; }
         public decimal ID_ModelosFK { get; set; }
         public bool Seleccionado { get; set; }
         public int Cantidad { get; set; }
+    }
+
+    public class PaqueteOpcionDto
+    {
+        public decimal ID_Paquete { get; set; }
+        public string Nombre { get; set; } = "";
+        public string Accion { get; set; } = "";
     }
 }

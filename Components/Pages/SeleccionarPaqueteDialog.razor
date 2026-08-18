@@ -1,0 +1,70 @@
+@inject IDialogService DialogService
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.subtitle1" Class="mb-2" Style="font-weight:600;">Paquetes disponibles</MudText>
+
+        @if (Paquetes.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Style="color: #888;">
+                No hay paquetes para esta categoría. Cree uno nuevo.
+            </MudText>
+        }
+        else
+        {
+            <MudStack Spacing="1" Style="max-height: 300px; overflow-y: auto;" Class="mb-2">
+                @foreach (var p in Paquetes)
+                {
+                    <MudPaper Class="pa-2 d-flex align-center" Style="border: 1px solid #3a3a4a;">
+                        <MudText Typo="Typo.body1" Style="color: #C1C1C4; flex:1;">
+                            @p.Nombre
+                        </MudText>
+                        <MudTooltip Text="Usar este paquete">
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Done" Color="Color.Success"
+                                           OnClick="@(() => Cerrar(p.ID_Paquete, "Usar"))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Editar paquete">
+                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Info"
+                                           OnClick="@(() => Cerrar(p.ID_Paquete, "Editar"))" />
+                        </MudTooltip>
+                    </MudPaper>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+            StartIcon="@Icons.Material.Filled.Cancel">
+            Cerrar
+        </MudButton>
+        <MudButton OnClick="NuevoPaquete" Color="Color.Success" Variant="Variant.Filled"
+            StartIcon="@Icons.Material.Filled.Add">
+            Nuevo Paquete
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public List<CargaProductos.PaqueteOpcionDto> Paquetes { get; set; } = new();
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private void Cerrar(decimal id, string accion)
+    {
+        MudDialog.Close(DialogResult.Ok(new CargaProductos.PaqueteOpcionDto
+        {
+            ID_Paquete = id,
+            Accion = accion
+        }));
+    }
+
+    private void NuevoPaquete()
+    {
+        MudDialog.Close(DialogResult.Ok(new CargaProductos.PaqueteOpcionDto
+        {
+            ID_Paquete = 0m,
+            Accion = "Nuevo"
+        }));
+    }
+}
