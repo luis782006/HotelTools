@@ -58,6 +58,22 @@ namespace HotelTools.Seguridad
                 return false;
             }
 
+            // Límite de sesiones concurrentes: máximo 2 por empleado.
+            // Si se intenta abrir una tercera, se cierran todas las activas.
+            var sesionesActivas = await _context.SesionesActivas
+                .Where(s => s.ID_Empleado == empleado.ID_Empleado && s.EstadoSesion)
+                .ToListAsync();
+
+            if (sesionesActivas.Count >= 2)
+            {
+                foreach (var sesion in sesionesActivas)
+                {
+                    sesion.EstadoSesion = false;
+                    sesion.FechaExpiracion = DateTime.Now;
+                }
+                await _context.SaveChangesAsync();
+            }
+
             string token = Guid.NewGuid().ToString().ToUpper();
 
             SesionActual = new SesionActiva
