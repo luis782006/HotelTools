@@ -16,23 +16,8 @@
         flex: 1 1 calc(100% / 6 - 1.5rem);
         min-width: 180px;
         max-width: 280px;
-        height: 160px;
+        height: 185px;
         overflow: hidden;
-    }
-
-    .room-panel {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 50%;
-        height: 100%;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-        z-index: 2;
-    }
-
-    .room-card:hover .room-panel {
-        transform: translateX(0);
     }
 </style>
 
@@ -63,42 +48,45 @@
 
                     <div class="room-card">
                         <MudPaper Elevation="3"
-                                  Style="@($"height:100%; border: 3px solid {colorBorde} !important; background: #27272F; border-radius: 8px;")">
-                            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
-                                Style="height: 100%; padding: 1rem;">
+                                  Style="@($"height:100%; border: 3px solid {colorBorde} !important; background: #27272F; border-radius: 8px; display:flex; flex-direction:column;")">
+                            <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0.75rem;">
                                 <MudText Typo="Typo.h3" Style="color: #C1C1C4; font-weight: 700;">
                                     @hab.DescripcionHab
                                 </MudText>
                                 <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
                                     Max: @hab.MaxPersonas personas
                                 </MudText>
-                                <MudChip T="string" Size="Size.Small" Style="@($"background: {chipColor}; color: #fff;")" Variant="Variant.Filled">
+                                <MudChip T="string" Size="Size.Small" Style="@($"background: {chipColor}; color: #fff; border-radius: 16px;")" Variant="Variant.Filled">
                                     @chipLabel
                                 </MudChip>
-                            </MudStack>
-
+                            </div>
+                            <div style="display:flex; justify-content:center; gap:0.75rem; padding:0.5rem 0;">
+                                <MudTooltip Text="Estado">
+                                    <MudButton Variant="Variant.Text" Size="Size.Small" DisableRipple="true"
+                                               OnClick="@(() => AbrirEstadoHab(hab))"
+                                               Style="min-width:0; padding:0;">
+                                        <MudAvatar Size="Size.Small" Variant="Variant.Outlined"
+                                                   Style="color: #C1C1C4; border-color: #C1C1C4;">E</MudAvatar>
+                                    </MudButton>
+                                </MudTooltip>
+                                <MudTooltip Text="Inventario">
+                                    <MudButton Variant="Variant.Text" Size="Size.Small" DisableRipple="true"
+                                               OnClick="@(() => AbrirInventario(hab))"
+                                               Style="min-width:0; padding:0;">
+                                        <MudAvatar Size="Size.Small" Variant="Variant.Outlined"
+                                                   Style="color: #C1C1C4; border-color: #C1C1C4;">I</MudAvatar>
+                                    </MudButton>
+                                </MudTooltip>
+                                <MudTooltip Text="Mucama">
+                                    <MudButton Variant="Variant.Text" Size="Size.Small" DisableRipple="true"
+                                               OnClick="@(() => AbrirMucama(hab))"
+                                               Style="min-width:0; padding:0;">
+                                        <MudAvatar Size="Size.Small" Variant="Variant.Outlined"
+                                                   Style="color: #C1C1C4; border-color: #C1C1C4;">M</MudAvatar>
+                                    </MudButton>
+                                </MudTooltip>
+                            </div>
                         </MudPaper>
-
-                        <div class="room-panel">
-                            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center"
-                                      Style="height: 100%; background: #32333d; padding: 0.5rem; ">
-                                <MudButton Variant="Variant.Filled" Size="Size.Small" FullWidth="true"
-                                           Style="background: #6123d3; color: #ccccd7; font-weight: 600;"
-                                    OnClick="@(() => AbrirEstadoHab(hab))">
-                                    Estado Hab
-                                </MudButton>
-                                <MudButton Variant="Variant.Filled" Size="Size.Small" FullWidth="true"
-                                           Style="background: #6123d3; color: #ccccd7; font-weight: 600;"
-                                    OnClick="@(() => AbrirInventario(hab))">
-                                    Inv
-                                </MudButton>
-                                <MudButton Variant="Variant.Filled" Size="Size.Small" FullWidth="true"
-                                           Style="background: #6123d3; color: #ccccd7; font-weight: 600;"
-                                    OnClick="@(() => AbrirMucama(hab))">
-                                    Mucama
-                                </MudButton>
-                            </MudStack>
-                        </div>
                     </div>
                 }
             </div>
