@@ -72,6 +72,8 @@
         try
         {
             var inicialesCategoria = ObtenerIniciales(CategoriaHabitacion?.TipoHab ?? "");
+            var ahora = DateTime.Now;
+            var productosCreados = new List<(Producto Producto, decimal ID_Habitacion)>();
 
             foreach (var hab in Habitaciones)
             {
@@ -100,12 +102,33 @@
                             ID_CategoriaProFK = prod.ID_CategoriaProFK,
                             ID_ModelosFK = prod.ID_ModelosFK,
                             ID_HabitacionFK = hab.ID_NroHab,
+                            ID_HabitacionOrigenFK = hab.ID_NroHab,
                             Estado = "Nuevo"
                         };
 
                         Context.Productos.Add(nuevoProducto);
+                        productosCreados.Add((nuevoProducto, hab.ID_NroHab));
                     }
                 }
+            }
+
+            await Context.SaveChangesAsync();
+
+            foreach (var (prod, idHab) in productosCreados)
+            {
+                var registroPivote = new HabitacionProductos
+                {
+                    ID_HabFK = idHab,
+                    ID_ProductosFK = prod.ID_Productos,
+                    Cantidad = 1,
+                    EsNativo = true,
+                    EsPrestamo = false,
+                    Activo = true,
+                    PrestadoFuera = false,
+                    FechaAsignacion = ahora
+                };
+
+                Context.HabitacionProductos.Add(registroPivote);
             }
 
             await Context.SaveChangesAsync();
