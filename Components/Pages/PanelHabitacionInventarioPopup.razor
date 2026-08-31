@@ -157,25 +157,27 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var idsProductos = Productos.Select(p => p.ID_Producto).Distinct().ToList();
+        var idHabitacion = Habitacion.ID_NroHab;
 
         var allProducts = await Context.Productos.AsNoTracking().ToListAsync();
-        CodigosProductos = allProducts
-            .Where(p => idsProductos.Contains(p.ID_Productos))
-            .ToDictionary(p => p.ID_Productos, p => p.Codigo);
-        DescripcionesProductos = allProducts
-            .Where(p => idsProductos.Contains(p.ID_Productos))
-            .ToDictionary(p => p.ID_Productos, p => p.Descripcion);
-
-        NombresHabitaciones = TodasHabitaciones.ToDictionary(h => h.ID_NroHab, h => h.DescripcionHab);
 
         var allMovimientos = await Context.ProductosMovimientos.AsNoTracking()
+            .Where(m => m.ID_HabOrigen == idHabitacion || m.ID_HabDestino == idHabitacion)
             .OrderByDescending(m => m.FechaMov)
             .ToListAsync();
 
-        TodosHistorial = allMovimientos
-            .Where(m => idsProductos.Contains(m.ID_Productos))
-            .ToList();
+        TodosHistorial = allMovimientos;
+
+        var idsEnHistorial = allMovimientos.Select(m => m.ID_Productos).Distinct().ToList();
+
+        CodigosProductos = allProducts
+            .Where(p => idsEnHistorial.Contains(p.ID_Productos))
+            .ToDictionary(p => p.ID_Productos, p => p.Codigo);
+        DescripcionesProductos = allProducts
+            .Where(p => idsEnHistorial.Contains(p.ID_Productos))
+            .ToDictionary(p => p.ID_Productos, p => p.Descripcion);
+
+        NombresHabitaciones = TodasHabitaciones.ToDictionary(h => h.ID_NroHab, h => h.DescripcionHab);
     }
 
     private string ObtenerNombreHabitacion(decimal idHab)
