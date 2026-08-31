@@ -12,18 +12,18 @@
 
 <MudDialog>
     <DialogContent>
+        <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color: #aaa;">
+            @Habitacion.DescripcionHab — Productos visibles
+        </MudText>
+
         @if (Productos.Count == 0)
         {
-            <MudText Typo="Typo.body1" Align="Align.Center" Style="color: #888;">
-                Sin productos registrados en esta habitación.
+            <MudText Typo="Typo.body1" Align="Align.Center" Style="color: #888;" Class="mb-2">
+                Sin productos activos en esta habitación.
             </MudText>
         }
         else
         {
-            <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color: #aaa;">
-                @Habitacion.DescripcionHab — Productos visibles
-            </MudText>
-
             <MudTable Items="@Productos" Dense="true" Hover="true" Striped="true" FixedHeader="true"
                       Style="max-height: 400px;">
                 <HeaderContent>
@@ -53,7 +53,7 @@
                         {
                             <MudTooltip Text="Prestar a otra habitación">
                                 <MudButton Class="action-btn" Variant="Variant.Outlined" Size="Size.Small"
-                                           Color="Color.Warning" Icon="@Icons.Material.Filled.CallMerge"
+                                           Color="Color.Warning" Icon="@Icons.Material.Filled.NorthEast"
                                            OnClick="@(() => AbrirPrestamo(context))" />
                             </MudTooltip>
                         }
@@ -66,65 +66,71 @@
                             </MudTooltip>
                             <MudTooltip Text="Devolver">
                                 <MudButton Class="action-btn" Variant="Variant.Outlined" Size="Size.Small"
-                                           Color="Color.Success" Icon="@Icons.Material.Filled.Undo"
+                                           Color="Color.Success" Icon="@Icons.Material.Filled.SouthWest"
                                            OnClick="@(() => AbrirDevolucion(context))" />
                             </MudTooltip>
                         }
                     </MudTd>
                 </RowTemplate>
             </MudTable>
+        }
 
-            <MudDivider Class="my-3" />
+        <MudDivider Class="my-3" />
 
-            <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color: #aaa;">
-                Historial de movimientos
-            </MudText>
+        <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color: #aaa;">
+            Historial de movimientos
+        </MudText>
 
-            @if (TodosHistorial.Count == 0)
-            {
-                <MudText Typo="Typo.body2" Style="color: #888;">Sin movimientos previos.</MudText>
-            }
-            else
-            {
-                <MudTable Items="@TodosHistorial" Dense="true" Hover="true" FixedHeader="true"
-                          Style="max-height: 200px;">
-                    <HeaderContent>
-                        <MudTh>Fecha</MudTh>
-                        <MudTh>Producto</MudTh>
-                        <MudTh>Tipo</MudTh>
-                        <MudTh>Origen</MudTh>
-                        <MudTh>Destino</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Fecha">
-                            <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
-                                @context.FechaMov.ToString("dd/MM/yyyy HH:mm")
-                            </MudText>
-                        </MudTd>
-                        <MudTd DataLabel="Producto">
-                            <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
-                                @ObtenerNombreProducto(context.ID_Productos)
-                            </MudText>
-                        </MudTd>
-                        <MudTd DataLabel="Tipo">
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
-                                     Style="@GetTipoMovStyle(context.TipoMovimiento)">
-                                @context.TipoMovimiento
-                            </MudChip>
-                        </MudTd>
-                        <MudTd DataLabel="Origen">
-                            <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
-                                @ObtenerNombreHabitacion(context.ID_HabOrigen)
-                            </MudText>
-                        </MudTd>
-                        <MudTd DataLabel="Destino">
-                            <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
-                                @ObtenerNombreHabitacion(context.ID_HabDestino)
-                            </MudText>
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
-            }
+        @if (TodosHistorial.Count == 0)
+        {
+            <MudText Typo="Typo.body2" Style="color: #888;">Sin movimientos previos.</MudText>
+        }
+        else
+        {
+            <MudTable Items="@TodosHistorial" Dense="true" Hover="true" FixedHeader="true"
+                      Style="max-height: 200px;">
+                <HeaderContent>
+                    <MudTh>Fecha</MudTh>
+                    <MudTh>Producto</MudTh>
+                    <MudTh>Descripción</MudTh>
+                    <MudTh>Tipo</MudTh>
+                    <MudTh>Origen</MudTh>
+                    <MudTh>Destino</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Fecha">
+                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                            @context.FechaMov.ToString("dd/MM/yyyy HH:mm")
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Producto">
+                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                            @ObtenerCodigoProducto(context.ID_Productos)
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Descripción">
+                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                            @ObtenerDescripcionProducto(context.ID_Productos)
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Tipo">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                 Style="@GetTipoMovStyle(context.TipoMovimiento)">
+                            @context.TipoMovimiento
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Origen">
+                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                            @ObtenerNombreHabitacion(context.ID_HabOrigen)
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Destino">
+                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                            @ObtenerNombreHabitacion(context.ID_HabDestino)
+                        </MudText>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
         }
     </DialogContent>
     <DialogActions>
@@ -146,16 +152,20 @@
 
     private List<ProductosMovimientos> TodosHistorial = new();
     private Dictionary<decimal, string> NombresHabitaciones = new();
-    private Dictionary<decimal, string> NombresProductos = new();
+    private Dictionary<decimal, string> CodigosProductos = new();
+    private Dictionary<decimal, string> DescripcionesProductos = new();
 
     protected override async Task OnInitializedAsync()
     {
         var idsProductos = Productos.Select(p => p.ID_Producto).Distinct().ToList();
 
         var allProducts = await Context.Productos.AsNoTracking().ToListAsync();
-        NombresProductos = allProducts
+        CodigosProductos = allProducts
             .Where(p => idsProductos.Contains(p.ID_Productos))
             .ToDictionary(p => p.ID_Productos, p => p.Codigo);
+        DescripcionesProductos = allProducts
+            .Where(p => idsProductos.Contains(p.ID_Productos))
+            .ToDictionary(p => p.ID_Productos, p => p.Descripcion);
 
         NombresHabitaciones = TodasHabitaciones.ToDictionary(h => h.ID_NroHab, h => h.DescripcionHab);
 
@@ -173,9 +183,14 @@
         return NombresHabitaciones.TryGetValue(idHab, out var nombre) ? nombre : $"Hab {idHab}";
     }
 
-    private string ObtenerNombreProducto(decimal idProd)
+    private string ObtenerCodigoProducto(decimal idProd)
     {
-        return NombresProductos.TryGetValue(idProd, out var nombre) ? nombre : $"Prod {idProd}";
+        return CodigosProductos.TryGetValue(idProd, out var codigo) ? codigo : $"Prod {idProd}";
+    }
+
+    private string ObtenerDescripcionProducto(decimal idProd)
+    {
+        return DescripcionesProductos.TryGetValue(idProd, out var desc) ? desc : $"Prod {idProd}";
     }
 
     private string GetEstadoCss(PanelHabitaciones.InventarioProductoDto ctx)
