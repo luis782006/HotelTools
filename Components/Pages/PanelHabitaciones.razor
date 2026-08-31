@@ -1,6 +1,7 @@
 ﻿@page "/panelhabitaciones"
 @attribute [Authorize(Policy = "ViewHabitacionesStatus")]
 @using Microsoft.EntityFrameworkCore
+@using HotelTools.Services
 
 <ValidaPermiso PermisoRequerido="ViewHabitacionesStatus" Objeto="PanelHabitaciones" />
 
@@ -100,7 +101,6 @@
 
     private bool Cargando = true;
     private List<HabitacionDto> lstHabitaciones = new();
-    private Dictionary<decimal, List<ProductoHabitacionDto>> productosPorHabitacion = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -108,27 +108,39 @@
             .OrderBy(h => h.DescripcionHab)
             .ToListAsync();
 
-        var habitacionProductos = await Context.HabitacionProductos.AsNoTracking()
-            .ToListAsync();
-
         var productos = await Context.Productos.AsNoTracking()
             .ToListAsync();
 
+        var habitacionProductos = await Context.HabitacionProductos.AsNoTracking()
+            .Where(hp => hp.Activo || (hp.EsNativo && hp.PrestadoFuera))
+            .ToListAsync();
+
+        var productosPorHabitacion = new Dictionary<decimal, List<InventarioProductoDto>>();
         foreach (var hp in habitacionProductos)
         {
             var prod = productos.FirstOrDefault(p => p.ID_Productos == hp.ID_ProductosFK);
-            if (prod != null)
-            {
-                if (!productosPorHabitacion.ContainsKey(hp.ID_HabFK))
-                    productosPorHabitacion[hp.ID_HabFK] = new List<ProductoHabitacionDto>();
+            if (prod == null) continue;
 
-                productosPorHabitacion[hp.ID_HabFK].Add(new ProductoHabitacionDto
-                {
-                    Codigo = prod.Codigo,
-                    Descripcion = prod.Descripcion,
-                    Cantidad = hp.Cantidad
-                });
-            }
+            if (!productosPorHabitacion.ContainsKey(hp.ID_HabFK))
+                productosPorHabitacion[hp.ID_HabFK] = new List<InventarioProductoDto>();
+
+            productosPorHabitacion[hp.ID_HabFK].Add(new InventarioProductoDto
+            {
+                ID_HabProductos = hp.ID_HabProductos,
+                ID_Producto = prod.ID_Productos,
+                Codigo = prod.Codigo,
+                Descripcion = prod.Descripcion,
+                Cantidad = hp.Cantidad,
+                EsNativo = hp.EsNativo,
+                EsPrestamo = hp.EsPrestamo,
+                Activo = hp.Activo,
+                PrestadoFuera = hp.PrestadoFuera,
+                FechaAsignacion = hp.FechaAsignacion,
+                FechaRetiro = hp.FechaRetiro,
+                ID_HabitacionCasa = prod.ID_HabitacionCasaFK,
+                Prestamo = prod.Prestamo,
+                Prestado = prod.Prestado
+            });
         }
 
         lstHabitaciones = habitaciones.Select(h => new HabitacionDto
@@ -137,7 +149,8 @@
             DescripcionHab = h.DescripcionHab,
             MaxPersonas = h.MaxPersonas,
             Estado = EstadoHabitacionHelper.FromBool(h.Estado),
-            TieneProductos = productosPorHabitacion.ContainsKey(h.ID_NroHab)
+            TieneProductos = productosPorHabitacion.ContainsKey(h.ID_NroHab),
+            Productos = productosPorHabitacion.TryGetValue(h.ID_NroHab, out var prods) ? prods : new List<InventarioProductoDto>()
         }).ToList();
 
         Cargando = false;
@@ -145,21 +158,26 @@
 
     private async Task AbrirInventario(HabitacionDto hab)
     {
-        var productos = productosPorHabitacion.ContainsKey(hab.ID_NroHab)
-            ? productosPorHabitacion[hab.ID_NroHab]
-            : new List<ProductoHabitacionDto>();
-
         var parameters = new DialogParameters
         {
             { "Habitacion", hab },
-            { "Productos", productos }
+            { "Productos", hab.Productos },
+            { "TodasHabitaciones", lstHabitaciones }
         };
 
-        var options = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
-        DialogService.Show<PanelHabitacionInventarioPopup>(
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<PanelHabitacionInventarioPopup>(
             $"Inventario - Habitación {hab.DescripcionHab}",
             parameters,
             options);
+
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            Cargando = true;
+            StateHasChanged();
+            await OnInitializedAsync();
+        }
     }
 
     private async Task AbrirEstadoHab(HabitacionDto hab)
@@ -185,12 +203,36 @@
         public int MaxPersonas { get; set; }
         public EstadoHabitacion Estado { get; set; }
         public bool TieneProductos { get; set; }
+        public List<InventarioProductoDto> Productos { get; set; } = new();
     }
 
-    public class ProductoHabitacionDto
+    public class InventarioProductoDto
     {
+        public decimal ID_HabProductos { get; set; }
+        public decimal ID_Producto { get; set; }
         public string Codigo { get; set; } = "";
         public string Descripcion { get; set; } = "";
         public int Cantidad { get; set; }
+        public bool EsNativo { get; set; }
+        public bool EsPrestamo { get; set; }
+        public bool Activo { get; set; }
+        public bool PrestadoFuera { get; set; }
+        public DateTime? FechaAsignacion { get; set; }
+        public DateTime? FechaRetiro { get; set; }
+        public decimal? ID_HabitacionCasa { get; set; }
+        public bool Prestamo { get; set; }
+        public bool Prestado { get; set; }
+
+        public string EstadoVisual
+        {
+            get
+            {
+                if (EsNativo && !PrestadoFuera) return "Nativo";
+                if (EsNativo && PrestadoFuera) return "Prestado fuera";
+                if (EsPrestamo && !EsNativo && Activo) return "Préstamo entrante";
+                if (!Activo) return "Histórico";
+                return "Otro";
+            }
+        }
     }
 }

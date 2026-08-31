@@ -67,6 +67,7 @@ builder.Services.AddSingleton<SeguridadGlobal>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, DynamicAuthorizationPolicyProvider>();
 builder.Services.AddScoped<BrowserJS>();
 builder.Services.AddScoped<ProductoEstadoService>();
+builder.Services.AddScoped<PrestamoService>();
 
 builder.Services.AddRazorComponents();
 builder.Services.AddServerSideBlazor()

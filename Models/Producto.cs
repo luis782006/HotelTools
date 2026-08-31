@@ -18,5 +18,8 @@ namespace HotelTools.Models
         public string? Observaciones { get; set; }
         public decimal? ReparadoPor { get; set; }
         public DateTime? FechaReparacion { get; set; }
+        public decimal? ID_HabitacionCasaFK { get; set; }
+        public bool Prestamo { get; set; } = false;
+        public bool Prestado { get; set; } = false;
     }
 }

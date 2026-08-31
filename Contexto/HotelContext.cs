@@ -36,6 +36,7 @@ namespace HotelTools.Models
         public virtual DbSet<Modelo> Modelos { get; set; }
         public virtual DbSet<Producto> Productos { get; set; }
         public virtual DbSet<HabitacionProductos> HabitacionProductos { get; set; }
+        public virtual DbSet<ProductosMovimientos> ProductosMovimientos { get; set; }
         public virtual DbSet<TipoProducto> TipoProductos { get; set; }
         public virtual DbSet<PaqueteProducto> PaqueteProductos { get; set; }
         public virtual DbSet<PaqueteProductoDetalle> PaqueteProductoDetalles { get; set; }
@@ -168,6 +169,9 @@ namespace HotelTools.Models
                 entity.Property(e => e.Observaciones).HasMaxLength(200);
                 entity.Property(e => e.ReparadoPor);
                 entity.Property(e => e.FechaReparacion);
+                entity.Property(e => e.ID_HabitacionCasaFK);
+                entity.Property(e => e.Prestamo).HasDefaultValue(false);
+                entity.Property(e => e.Prestado).HasDefaultValue(false);
                 entity.ToTable("Productos", "Inventarios");
             });
 
@@ -175,7 +179,29 @@ namespace HotelTools.Models
             {
                 entity.HasKey(c => c.ID_HabProductos);
                 entity.Property(e => e.ID_HabProductos).ValueGeneratedOnAdd();
+                entity.Property(e => e.EsNativo).HasDefaultValue(true);
+                entity.Property(e => e.EsPrestamo).HasDefaultValue(false);
+                entity.Property(e => e.Activo).HasDefaultValue(true);
+                entity.Property(e => e.PrestadoFuera).HasDefaultValue(false);
+                entity.Property(e => e.FechaAsignacion);
+                entity.Property(e => e.FechaRetiro);
                 entity.ToTable("HabitacionProductos", "Inventarios");
+            });
+
+            modelBuilder.Entity<ProductosMovimientos>(entity =>
+            {
+                entity.HasKey(c => c.ID_ProductosMovimientos);
+                entity.Property(e => e.ID_ProductosMovimientos).ValueGeneratedOnAdd();
+                entity.Property(e => e.ID_Productos);
+                entity.Property(e => e.ID_HabOrigen);
+                entity.Property(e => e.ID_HabDestino);
+                entity.Property(e => e.FechaMov);
+                entity.Property(e => e.ID_Empleado);
+                entity.Property(e => e.Observaciones);
+                entity.Property(e => e.ID_EmpleadoMov);
+                entity.Property(e => e.TipoMovimiento).HasMaxLength(20);
+                entity.Property(e => e.ID_HabitacionCasa);
+                entity.ToTable("ProductosMovimientos", "Inventarios");
             });
 
             modelBuilder.Entity<TipoProducto>(entity =>

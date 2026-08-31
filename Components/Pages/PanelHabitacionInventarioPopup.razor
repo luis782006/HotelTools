@@ -1,28 +1,135 @@
+@using HotelTools.Services
+@using Microsoft.EntityFrameworkCore
+
+<style>
+    .estado-nativo { background: #1b5e20; color: #fff; }
+    .estado-prestado-fuera { background: #e65100; color: #fff; }
+    .estado-prestamo-entrante { background: #1565c0; color: #fff; }
+    .estado-historico { background: #424242; color: #aaa; }
+
+    .action-btn { min-width: 32px; min-height: 32px; padding: 0; }
+</style>
+
 <MudDialog>
     <DialogContent>
         @if (Productos.Count == 0)
         {
-            <MudText Typo="Typo.body1" Class="text-center">Sin productos registrados en esta habitación.</MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center" Style="color: #888;">
+                Sin productos registrados en esta habitación.
+            </MudText>
         }
         else
         {
-            <MudTable Items="@Productos" Dense="true" Hover="true" Striped="true" FixedHeader="true">
+            <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color: #aaa;">
+                @Habitacion.DescripcionHab — Productos visibles
+            </MudText>
+
+            <MudTable Items="@Productos" Dense="true" Hover="true" Striped="true" FixedHeader="true"
+                      Style="max-height: 400px;">
                 <HeaderContent>
                     <MudTh>Código</MudTh>
                     <MudTh>Descripción</MudTh>
-                    <MudTh>Cantidad</MudTh>
+                    <MudTh>Cant</MudTh>
+                    <MudTh>Estado</MudTh>
+                    <MudTh>Acciones</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Código">@context.Codigo</MudTd>
-                    <MudTd DataLabel="Descripción">@context.Descripcion</MudTd>
-                    <MudTd DataLabel="Cantidad">@context.Cantidad</MudTd>
+                    <MudTd DataLabel="Código">
+                        <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Codigo</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Descripción">
+                        <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Descripcion</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Cant">
+                        <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Cantidad</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Estado">
+                        <span class="@GetEstadoCss(context)" style="padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
+                            @context.EstadoVisual
+                        </span>
+                    </MudTd>
+                    <MudTd DataLabel="Acciones">
+                        @if (context.EsNativo && !context.PrestadoFuera)
+                        {
+                            <MudTooltip Text="Prestar a otra habitación">
+                                <MudButton Class="action-btn" Variant="Variant.Outlined" Size="Size.Small"
+                                           Color="Color.Warning" Icon="@Icons.Material.Filled.CallMerge"
+                                           OnClick="@(() => AbrirPrestamo(context))" />
+                            </MudTooltip>
+                        }
+                        else if (context.EsPrestamo && !context.EsNativo && context.Activo)
+                        {
+                            <MudTooltip Text="Trasladar a otra habitación">
+                                <MudButton Class="action-btn" Variant="Variant.Outlined" Size="Size.Small"
+                                           Color="Color.Info" Icon="@Icons.Material.Filled.SwapHoriz"
+                                           OnClick="@(() => AbrirTraslado(context))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Devolver">
+                                <MudButton Class="action-btn" Variant="Variant.Outlined" Size="Size.Small"
+                                           Color="Color.Success" Icon="@Icons.Material.Filled.Undo"
+                                           OnClick="@(() => AbrirDevolucion(context))" />
+                            </MudTooltip>
+                        }
+                    </MudTd>
                 </RowTemplate>
             </MudTable>
+
+            <MudDivider Class="my-3" />
+
+            <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color: #aaa;">
+                Historial de movimientos
+            </MudText>
+
+            @if (TodosHistorial.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Style="color: #888;">Sin movimientos previos.</MudText>
+            }
+            else
+            {
+                <MudTable Items="@TodosHistorial" Dense="true" Hover="true" FixedHeader="true"
+                          Style="max-height: 200px;">
+                    <HeaderContent>
+                        <MudTh>Fecha</MudTh>
+                        <MudTh>Producto</MudTh>
+                        <MudTh>Tipo</MudTh>
+                        <MudTh>Origen</MudTh>
+                        <MudTh>Destino</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Fecha">
+                            <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                @context.FechaMov.ToString("dd/MM/yyyy HH:mm")
+                            </MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Producto">
+                            <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                @ObtenerNombreProducto(context.ID_Productos)
+                            </MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Tipo">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                     Style="@GetTipoMovStyle(context.TipoMovimiento)">
+                                @context.TipoMovimiento
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Origen">
+                            <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                @ObtenerNombreHabitacion(context.ID_HabOrigen)
+                            </MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Destino">
+                            <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                @ObtenerNombreHabitacion(context.ID_HabDestino)
+                            </MudText>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
         }
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cerrar" Color="Color.Info" Variant="Variant.Outlined"
-            StartIcon="@Icons.Material.Filled.Close">
+                   StartIcon="@Icons.Material.Filled.Close">
             Cerrar
         </MudButton>
     </DialogActions>
@@ -31,7 +138,112 @@
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
     [Parameter] public PanelHabitaciones.HabitacionDto Habitacion { get; set; }
-    [Parameter] public List<PanelHabitaciones.ProductoHabitacionDto> Productos { get; set; } = new();
+    [Parameter] public List<PanelHabitaciones.InventarioProductoDto> Productos { get; set; } = new();
+    [Parameter] public List<PanelHabitaciones.HabitacionDto> TodasHabitaciones { get; set; } = new();
+
+    [Inject] private IDialogService DialogService { get; set; }
+    [Inject] private HotelContext Context { get; set; }
+
+    private List<ProductosMovimientos> TodosHistorial = new();
+    private Dictionary<decimal, string> NombresHabitaciones = new();
+    private Dictionary<decimal, string> NombresProductos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var idsProductos = Productos.Select(p => p.ID_Producto).Distinct().ToList();
+        NombresProductos = await Context.Productos
+            .Where(p => idsProductos.Contains(p.ID_Productos))
+            .ToDictionaryAsync(p => p.ID_Productos, p => p.Codigo);
+
+        NombresHabitaciones = TodasHabitaciones.ToDictionary(h => h.ID_NroHab, h => h.DescripcionHab);
+
+        var historial = await Context.ProductosMovimientos
+            .Where(m => idsProductos.Contains(m.ID_Productos))
+            .OrderByDescending(m => m.FechaMov)
+            .ToListAsync();
+
+        TodosHistorial = historial;
+    }
+
+    private string ObtenerNombreHabitacion(decimal idHab)
+    {
+        return NombresHabitaciones.TryGetValue(idHab, out var nombre) ? nombre : $"Hab {idHab}";
+    }
+
+    private string ObtenerNombreProducto(decimal idProd)
+    {
+        return NombresProductos.TryGetValue(idProd, out var nombre) ? nombre : $"Prod {idProd}";
+    }
+
+    private string GetEstadoCss(PanelHabitaciones.InventarioProductoDto ctx)
+    {
+        if (ctx.EsNativo && !ctx.PrestadoFuera) return "estado-nativo";
+        if (ctx.EsNativo && ctx.PrestadoFuera) return "estado-prestado-fuera";
+        if (ctx.EsPrestamo && !ctx.EsNativo && ctx.Activo) return "estado-prestamo-entrante";
+        return "estado-historico";
+    }
+
+    private string GetTipoMovStyle(string? tipo)
+    {
+        return tipo switch
+        {
+            "PRESTAMO" => "background: #e65100; color: #fff;",
+            "TRASLADO" => "background: #1565c0; color: #fff;",
+            "DEVOLUCION" => "background: #1b5e20; color: #fff;",
+            _ => "background: #424242; color: #fff;"
+        };
+    }
+
+    private async Task AbrirPrestamo(PanelHabitaciones.InventarioProductoDto producto)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Producto", producto },
+            { "HabitacionOrigen", Habitacion },
+            { "TodasHabitaciones", TodasHabitaciones }
+        };
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<PrestamoDialog>("Préstamo de Producto", parameters, options);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+    }
+
+    private async Task AbrirTraslado(PanelHabitaciones.InventarioProductoDto producto)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Producto", producto },
+            { "HabitacionOrigen", Habitacion },
+            { "TodasHabitaciones", TodasHabitaciones }
+        };
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<TrasladoDialog>("Traslado de Producto", parameters, options);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+    }
+
+    private async Task AbrirDevolucion(PanelHabitaciones.InventarioProductoDto producto)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Producto", producto },
+            { "HabitacionOrigen", Habitacion },
+            { "TodasHabitaciones", TodasHabitaciones }
+        };
+        var options = new DialogOptions() { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<DevolucionDialog>("Devolución de Producto", parameters, options);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+    }
 
     void Cerrar() => MudDialog.Cancel();
 }
