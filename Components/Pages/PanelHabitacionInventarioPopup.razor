@@ -50,7 +50,7 @@
                         @if (context.EsNativo && !context.PrestadoFuera)
                         {
                             <MudTooltip Text="Prestar a otra habitación">
-                                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small"
+                                <MudIconButton Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small"
                                                Color="Color.Warning" OnClick="@(() => AbrirPrestamo(context))" />
                             </MudTooltip>
                         }
@@ -61,7 +61,7 @@
                                                Color="Color.Info" OnClick="@(() => AbrirTraslado(context))" />
                             </MudTooltip>
                             <MudTooltip Text="Devolver">
-                                <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small"
+                                <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small"
                                                Color="Color.Success" OnClick="@(() => AbrirDevolucion(context))" />
                             </MudTooltip>
                         }
@@ -83,7 +83,7 @@
         else
         {
             <MudTable Items="@TodosHistorial" Dense="true" Hover="true" FixedHeader="true"
-                      Style="max-height: 200px;">
+                      Style="max-height: 300px;" Pager="PagerContent" RowsPerPage="10">
                 <HeaderContent>
                     <MudTh>Fecha</MudTh>
                     <MudTh>Producto</MudTh>
@@ -125,6 +125,9 @@
                         </MudText>
                     </MudTd>
                 </RowTemplate>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new[] { 5, 10, 25, 50 }" />
+                </PagerContent>
             </MudTable>
         }
     </DialogContent>
