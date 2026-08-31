@@ -19,7 +19,7 @@ namespace HotelTools.Services
             if (producto == null)
                 return new ResultadoOperacion(false, "Producto no encontrado.");
 
-            var idCasa = producto.ID_HabitacionCasaFK;
+            var idCasa = producto.ID_HabitacionOrigenFK;
             if (idCasa == null)
                 return new ResultadoOperacion(false, "El producto no tiene casa definida.");
 
@@ -97,7 +97,7 @@ namespace HotelTools.Services
             if (producto == null)
                 return new ResultadoOperacion(false, "Producto no encontrado.");
 
-            var idCasa = producto.ID_HabitacionCasaFK;
+            var idCasa = producto.ID_HabitacionOrigenFK;
             if (idCasa == null)
                 return new ResultadoOperacion(false, "El producto no tiene casa definida.");
 
@@ -176,7 +176,7 @@ namespace HotelTools.Services
             if (producto == null)
                 return new ResultadoOperacion(false, "Producto no encontrado.");
 
-            var idCasa = producto.ID_HabitacionCasaFK;
+            var idCasa = producto.ID_HabitacionOrigenFK;
             if (idCasa == null)
                 return new ResultadoOperacion(false, "El producto no tiene casa definida.");
 
@@ -274,10 +274,10 @@ namespace HotelTools.Services
         public async Task<List<decimal>> ObtenerDestinosPosibles(decimal idProducto)
         {
             var producto = await _context.Productos.FindAsync(idProducto);
-            if (producto?.ID_HabitacionCasaFK == null)
+            if (producto?.ID_HabitacionOrigenFK == null)
                 return new List<decimal>();
 
-            var idCasa = producto.ID_HabitacionCasaFK.Value;
+            var idCasa = producto.ID_HabitacionOrigenFK.Value;
             var idActual = producto.ID_HabitacionFK ?? 0;
 
             var destinos = new List<decimal> { idCasa };

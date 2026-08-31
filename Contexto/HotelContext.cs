@@ -169,7 +169,7 @@ namespace HotelTools.Models
                 entity.Property(e => e.Observaciones).HasMaxLength(200);
                 entity.Property(e => e.ReparadoPor);
                 entity.Property(e => e.FechaReparacion);
-                entity.Property(e => e.ID_HabitacionCasaFK);
+                entity.Property(e => e.ID_HabitacionOrigenFK);
                 entity.Property(e => e.Prestamo).HasDefaultValue(false);
                 entity.Property(e => e.Prestado).HasDefaultValue(false);
                 entity.ToTable("Productos", "Inventarios");
