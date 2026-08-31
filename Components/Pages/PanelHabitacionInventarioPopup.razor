@@ -10,6 +10,7 @@
 
 <MudDialog>
     <DialogContent>
+        <div style="padding-top: 40px; padding-bottom: 40px;">
         <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color: #aaa;">
             @Habitacion.DescripcionHab — Productos visibles
         </MudText>
@@ -23,7 +24,7 @@
         else
         {
             <MudTable Items="@Productos" Dense="true" Hover="true" Striped="true" FixedHeader="true"
-                      Style="max-height: 400px;">
+                      Style="max-height: 400px;" Pager="PagerContentProductos" RowsPerPage="10">
                 <HeaderContent>
                     <MudTh>Código</MudTh>
                     <MudTh>Descripción</MudTh>
@@ -67,6 +68,9 @@
                         }
                     </MudTd>
                 </RowTemplate>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new[] { 5, 10, 25, 50 }" />
+                </PagerContent>
             </MudTable>
         }
 
@@ -83,7 +87,7 @@
         else
         {
             <MudTable Items="@TodosHistorial" Dense="true" Hover="true" FixedHeader="true"
-                      Style="max-height: 300px;" Pager="PagerContent" RowsPerPage="10">
+                      Style="max-height: 300px;" Pager="PagerContentHistorial" RowsPerPage="5">
                 <HeaderContent>
                     <MudTh>Fecha</MudTh>
                     <MudTh>Producto</MudTh>
@@ -130,6 +134,7 @@
                 </PagerContent>
             </MudTable>
         }
+        </div>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cerrar" Color="Color.Info" Variant="Variant.Outlined"
