@@ -6,8 +6,6 @@
     .estado-prestado-fuera { background: #e65100; color: #fff; }
     .estado-prestamo-entrante { background: #1565c0; color: #fff; }
     .estado-historico { background: #424242; color: #aaa; }
-
-    .action-btn { min-width: 32px; min-height: 32px; padding: 0; }
 </style>
 
 <MudDialog>
@@ -52,22 +50,19 @@
                         @if (context.EsNativo && !context.PrestadoFuera)
                         {
                             <MudTooltip Text="Prestar a otra habitación">
-                                <MudButton Class="action-btn" Variant="Variant.Outlined" Size="Size.Small"
-                                           Color="Color.Warning" Icon="@Icons.Material.Filled.NorthEast"
-                                           OnClick="@(() => AbrirPrestamo(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small"
+                                               Color="Color.Warning" OnClick="@(() => AbrirPrestamo(context))" />
                             </MudTooltip>
                         }
                         else if (context.EsPrestamo && !context.EsNativo && context.Activo)
                         {
                             <MudTooltip Text="Trasladar a otra habitación">
-                                <MudButton Class="action-btn" Variant="Variant.Outlined" Size="Size.Small"
-                                           Color="Color.Info" Icon="@Icons.Material.Filled.SwapHoriz"
-                                           OnClick="@(() => AbrirTraslado(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small"
+                                               Color="Color.Info" OnClick="@(() => AbrirTraslado(context))" />
                             </MudTooltip>
                             <MudTooltip Text="Devolver">
-                                <MudButton Class="action-btn" Variant="Variant.Outlined" Size="Size.Small"
-                                           Color="Color.Success" Icon="@Icons.Material.Filled.SouthWest"
-                                           OnClick="@(() => AbrirDevolucion(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small"
+                                               Color="Color.Success" OnClick="@(() => AbrirDevolucion(context))" />
                             </MudTooltip>
                         }
                     </MudTd>
