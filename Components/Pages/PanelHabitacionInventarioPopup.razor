@@ -151,18 +151,21 @@
     protected override async Task OnInitializedAsync()
     {
         var idsProductos = Productos.Select(p => p.ID_Producto).Distinct().ToList();
-        NombresProductos = await Context.Productos
+
+        var allProducts = await Context.Productos.AsNoTracking().ToListAsync();
+        NombresProductos = allProducts
             .Where(p => idsProductos.Contains(p.ID_Productos))
-            .ToDictionaryAsync(p => p.ID_Productos, p => p.Codigo);
+            .ToDictionary(p => p.ID_Productos, p => p.Codigo);
 
         NombresHabitaciones = TodasHabitaciones.ToDictionary(h => h.ID_NroHab, h => h.DescripcionHab);
 
-        var historial = await Context.ProductosMovimientos
-            .Where(m => idsProductos.Contains(m.ID_Productos))
+        var allMovimientos = await Context.ProductosMovimientos.AsNoTracking()
             .OrderByDescending(m => m.FechaMov)
             .ToListAsync();
 
-        TodosHistorial = historial;
+        TodosHistorial = allMovimientos
+            .Where(m => idsProductos.Contains(m.ID_Productos))
+            .ToList();
     }
 
     private string ObtenerNombreHabitacion(decimal idHab)
