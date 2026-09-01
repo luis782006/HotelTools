@@ -12,9 +12,9 @@
             <MudText Typo="Typo.body2" Style="color: #888;">
                 <strong>Origen actual:</strong> @HabitacionOrigen.DescripcionHab
             </MudText>
-            <MudText Typo="Typo.body2" Style="color: #1565c0;">
-                ℹ Si el destino es la casa, se restablece como nativo. Si es otra habitación, se mantiene como préstamo.
-            </MudText>
+            <MudTooltip Text="Si el destino es la casa, se restablece como nativo. Si es otra habitación, se mantiene como préstamo." Placement="Placement.Top">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Color="Color.Info" Size="Size.Small" Class="mr-1" />
+            </MudTooltip>
 
             <MudSelect T="decimal" @bind-Value="DestinoSeleccionado" Label="Habitación destino"
                        Variant="Variant.Outlined" Class="mt-2">
