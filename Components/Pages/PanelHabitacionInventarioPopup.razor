@@ -11,129 +11,141 @@
 <MudDialog>
     <DialogContent>
         <div style="padding-top: 40px; padding-bottom: 40px;">
-        <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color: #aaa;">
-            @Habitacion.DescripcionHab — Productos visibles
-        </MudText>
+        <MudExpansionPanels>
+            <MudExpansionPanel @bind-Expanded="_panelProductosAbierto">
+                <TitleContent>
+                    <MudText Typo="Typo.subtitle2">
+                        <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="mr-2" />
+                        @Habitacion.DescripcionHab — Productos visibles
+                    </MudText>
+                </TitleContent>
+                <ChildContent>
+                    @if (Productos.Count == 0)
+                    {
+                        <MudText Typo="Typo.body1" Align="Align.Center" Style="color: #888;">
+                            Sin productos activos en esta habitación.
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudTable Items="@Productos" Dense="true" Hover="true" Striped="true" FixedHeader="true"
+                                  Style="max-height: 400px;" Pager="PagerContentProductos" RowsPerPage="10">
+                            <HeaderContent>
+                                <MudTh>Código</MudTh>
+                                <MudTh>Descripción</MudTh>
+                                <MudTh>Cant</MudTh>
+                                <MudTh>Estado</MudTh>
+                                <MudTh>Acciones</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Código">
+                                    <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Codigo</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Descripción">
+                                    <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Descripcion</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Cant">
+                                    <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Cantidad</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Estado">
+                                    <span class="@GetEstadoCss(context)" style="padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
+                                        @context.EstadoVisual
+                                    </span>
+                                </MudTd>
+                                <MudTd DataLabel="Acciones">
+                                    @if (context.EsNativo && !context.PrestadoFuera)
+                                    {
+                                        <MudTooltip Text="Prestar a otra habitación">
+                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small"
+                                                           Color="Color.Warning" OnClick="@(() => AbrirPrestamo(context))" />
+                                        </MudTooltip>
+                                    }
+                                    else if (context.EsPrestamo && !context.EsNativo && context.Activo)
+                                    {
+                                        <MudTooltip Text="Trasladar a otra habitación">
+                                            <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small"
+                                                           Color="Color.Info" OnClick="@(() => AbrirTraslado(context))" />
+                                        </MudTooltip>
+                                        <MudTooltip Text="Devolver">
+                                            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small"
+                                                           Color="Color.Success" OnClick="@(() => AbrirDevolucion(context))" />
+                                        </MudTooltip>
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager PageSizeOptions="new[] { 5, 10, 25, 50 }" />
+                            </PagerContent>
+                        </MudTable>
+                    }
+                </ChildContent>
+            </MudExpansionPanel>
 
-        @if (Productos.Count == 0)
-        {
-            <MudText Typo="Typo.body1" Align="Align.Center" Style="color: #888;" Class="mb-2">
-                Sin productos activos en esta habitación.
-            </MudText>
-        }
-        else
-        {
-            <MudTable Items="@Productos" Dense="true" Hover="true" Striped="true" FixedHeader="true"
-                      Style="max-height: 400px;" Pager="PagerContentProductos" RowsPerPage="10">
-                <HeaderContent>
-                    <MudTh>Código</MudTh>
-                    <MudTh>Descripción</MudTh>
-                    <MudTh>Cant</MudTh>
-                    <MudTh>Estado</MudTh>
-                    <MudTh>Acciones</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Código">
-                        <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Codigo</MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Descripción">
-                        <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Descripcion</MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Cant">
-                        <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Cantidad</MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Estado">
-                        <span class="@GetEstadoCss(context)" style="padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
-                            @context.EstadoVisual
-                        </span>
-                    </MudTd>
-                    <MudTd DataLabel="Acciones">
-                        @if (context.EsNativo && !context.PrestadoFuera)
-                        {
-                            <MudTooltip Text="Prestar a otra habitación">
-                                <MudIconButton Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small"
-                                               Color="Color.Warning" OnClick="@(() => AbrirPrestamo(context))" />
-                            </MudTooltip>
-                        }
-                        else if (context.EsPrestamo && !context.EsNativo && context.Activo)
-                        {
-                            <MudTooltip Text="Trasladar a otra habitación">
-                                <MudIconButton Icon="@Icons.Material.Filled.SwapHoriz" Size="Size.Small"
-                                               Color="Color.Info" OnClick="@(() => AbrirTraslado(context))" />
-                            </MudTooltip>
-                            <MudTooltip Text="Devolver">
-                                <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small"
-                                               Color="Color.Success" OnClick="@(() => AbrirDevolucion(context))" />
-                            </MudTooltip>
-                        }
-                    </MudTd>
-                </RowTemplate>
-                <PagerContent>
-                    <MudTablePager PageSizeOptions="new[] { 5, 10, 25, 50 }" />
-                </PagerContent>
-            </MudTable>
-        }
-
-        <MudDivider Class="my-3" />
-
-        <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color: #aaa;">
-            Historial de movimientos
-        </MudText>
-
-        @if (TodosHistorial.Count == 0)
-        {
-            <MudText Typo="Typo.body2" Style="color: #888;">Sin movimientos previos.</MudText>
-        }
-        else
-        {
-            <MudTable Items="@TodosHistorial" Dense="true" Hover="true" FixedHeader="true"
-                      Style="max-height: 300px;" Pager="PagerContentHistorial" RowsPerPage="5">
-                <HeaderContent>
-                    <MudTh>Fecha</MudTh>
-                    <MudTh>Producto</MudTh>
-                    <MudTh>Descripción</MudTh>
-                    <MudTh>Tipo</MudTh>
-                    <MudTh>Origen</MudTh>
-                    <MudTh>Destino</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Fecha">
-                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
-                            @context.FechaMov.ToString("dd/MM/yyyy HH:mm")
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Producto">
-                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
-                            @ObtenerCodigoProducto(context.ID_Productos)
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Descripción">
-                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
-                            @ObtenerDescripcionProducto(context.ID_Productos)
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Tipo">
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
-                                 Style="@GetTipoMovStyle(context.TipoMovimiento)">
-                            @context.TipoMovimiento
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="Origen">
-                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
-                            @ObtenerNombreHabitacion(context.ID_HabOrigen)
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Destino">
-                        <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
-                            @ObtenerNombreHabitacion(context.ID_HabDestino)
-                        </MudText>
-                    </MudTd>
-                </RowTemplate>
-                <PagerContent>
-                    <MudTablePager PageSizeOptions="new[] { 5, 10, 25, 50 }" />
-                </PagerContent>
-            </MudTable>
-        }
+            <MudExpansionPanel @bind-Expanded="_panelHistorialAbierto">
+                <TitleContent>
+                    <MudText Typo="Typo.subtitle2">
+                        <MudIcon Icon="@Icons.Material.Filled.History" Class="mr-2" />
+                        Historial de movimientos
+                    </MudText>
+                </TitleContent>
+                <ChildContent>
+                    @if (TodosHistorial.Count == 0)
+                    {
+                        <MudText Typo="Typo.body2" Style="color: #888;">Sin movimientos previos.</MudText>
+                    }
+                    else
+                    {
+                        <MudTable Items="@TodosHistorial" Dense="true" Hover="true" FixedHeader="true"
+                                  Style="max-height: 300px;" Pager="PagerContentHistorial" RowsPerPage="5">
+                            <HeaderContent>
+                                <MudTh>Fecha</MudTh>
+                                <MudTh>Producto</MudTh>
+                                <MudTh>Descripción</MudTh>
+                                <MudTh>Tipo</MudTh>
+                                <MudTh>Origen</MudTh>
+                                <MudTh>Destino</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Fecha">
+                                    <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                        @context.FechaMov.ToString("dd/MM/yyyy HH:mm")
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Producto">
+                                    <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                        @ObtenerCodigoProducto(context.ID_Productos)
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Descripción">
+                                    <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                        @ObtenerDescripcionProducto(context.ID_Productos)
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Tipo">
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                             Style="@GetTipoMovStyle(context.TipoMovimiento)">
+                                        @context.TipoMovimiento
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="Origen">
+                                    <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                        @ObtenerNombreHabitacion(context.ID_HabOrigen)
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Destino">
+                                    <MudText Typo="Typo.caption" Style="color: #C1C1C4;">
+                                        @ObtenerNombreHabitacion(context.ID_HabDestino)
+                                    </MudText>
+                                </MudTd>
+                            </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager PageSizeOptions="new[] { 5, 10, 25, 50 }" />
+                            </PagerContent>
+                        </MudTable>
+                    }
+                </ChildContent>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
         </div>
     </DialogContent>
     <DialogActions>
@@ -157,6 +169,8 @@
     private Dictionary<decimal, string> NombresHabitaciones = new();
     private Dictionary<decimal, string> CodigosProductos = new();
     private Dictionary<decimal, string> DescripcionesProductos = new();
+    private bool _panelProductosAbierto = true;
+    private bool _panelHistorialAbierto = false;
 
     protected override async Task OnInitializedAsync()
     {
