@@ -41,6 +41,15 @@ namespace HotelTools.Models
         public virtual DbSet<PaqueteProducto> PaqueteProductos { get; set; }
         public virtual DbSet<PaqueteProductoDetalle> PaqueteProductoDetalles { get; set; }
 
+        public virtual DbSet<Queja> Quejas { get; set; }
+        public virtual DbSet<HistorialQueja> HistorialQuejas { get; set; }
+        public virtual DbSet<Huesped> Huespedes { get; set; }
+        public virtual DbSet<CategoriaQueja> CategoriasQueja { get; set; }
+        public virtual DbSet<EstadoQueja> EstadosQueja { get; set; }
+        public virtual DbSet<PrioridadQueja> PrioridadesQueja { get; set; }
+        public virtual DbSet<ImagenQueja> ImagenesQueja { get; set; }
+        public virtual DbSet<QuejaImagen> QuejasImagenes { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Cargo>(entity =>
@@ -230,6 +239,75 @@ namespace HotelTools.Models
                     .OnDelete(DeleteBehavior.Cascade);
                 entity.HasOne(e => e.TipoProducto).WithMany().HasForeignKey(e => e.ID_TipoProductoFK);
                 entity.ToTable("PaqueteProductoDetalle", "Inventarios");
+            });
+
+            modelBuilder.Entity<Queja>(entity =>
+            {
+                entity.HasKey(e => e.ID_Quejas);
+                entity.Property(e => e.ID_Quejas).ValueGeneratedOnAdd();
+                entity.Property(e => e.Quejas).HasColumnType("nvarchar(max)");
+                entity.ToTable("Quejas", "Quejas");
+            });
+
+            modelBuilder.Entity<HistorialQueja>(entity =>
+            {
+                entity.HasKey(e => e.ID_Orden);
+                entity.Property(e => e.ID_Orden).ValueGeneratedOnAdd();
+                entity.Property(e => e.observaciones).HasMaxLength(10);
+                entity.Property(e => e.FechaRegistro).HasDefaultValueSql("GETDATE()");
+                entity.ToTable("Historial", "Quejas");
+            });
+
+            modelBuilder.Entity<Huesped>(entity =>
+            {
+                entity.HasKey(e => e.ID_Huesped);
+                entity.Property(e => e.ID_Huesped).ValueGeneratedOnAdd();
+                entity.Property(e => e.Nombre).HasMaxLength(40);
+                entity.Property(e => e.Apellido).HasMaxLength(50);
+                entity.ToTable("Huespedes", "Quejas");
+            });
+
+            modelBuilder.Entity<CategoriaQueja>(entity =>
+            {
+                entity.HasKey(e => e.ID_CategoriaQueja);
+                entity.Property(e => e.ID_CategoriaQueja).ValueGeneratedOnAdd();
+                entity.Property(e => e.NombreCategoria).HasMaxLength(60);
+                entity.Property(e => e.Descripcion).HasMaxLength(250);
+                entity.Property(e => e.Activo).HasDefaultValue(true);
+                entity.ToTable("CategoriasQueja", "Quejas");
+            });
+
+            modelBuilder.Entity<EstadoQueja>(entity =>
+            {
+                entity.HasKey(e => e.ID_Estado);
+                entity.Property(e => e.ID_Estado).ValueGeneratedOnAdd();
+                entity.Property(e => e.NombreEstado).HasColumnType("nvarchar(max)");
+                entity.ToTable("Estados", "Quejas");
+            });
+
+            modelBuilder.Entity<PrioridadQueja>(entity =>
+            {
+                entity.HasKey(e => e.ID_Prioridad);
+                entity.Property(e => e.ID_Prioridad).ValueGeneratedOnAdd();
+                entity.Property(e => e.Descripcion).HasMaxLength(100);
+                entity.Property(e => e.Color).HasMaxLength(20);
+                entity.ToTable("Prioridad", "Quejas");
+            });
+
+            modelBuilder.Entity<ImagenQueja>(entity =>
+            {
+                entity.HasKey(e => e.idImagen);
+                entity.Property(e => e.idImagen).ValueGeneratedOnAdd();
+                entity.Property(e => e.imagen).HasColumnType("varbinary(max)");
+                entity.ToTable("Imagen", "Quejas");
+            });
+
+            modelBuilder.Entity<QuejaImagen>(entity =>
+            {
+                entity.HasKey(e => e.ID_QuejaImagen);
+                entity.Property(e => e.ID_QuejaImagen).ValueGeneratedOnAdd();
+                entity.Property(e => e.FechaAdjunto).HasDefaultValueSql("GETDATE()");
+                entity.ToTable("QuejaImagen", "Quejas");
             });
         }
     }

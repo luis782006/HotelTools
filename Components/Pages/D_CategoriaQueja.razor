@@ -1,0 +1,126 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12" md="12">
+                    <MudTextField @bind-Value="entity.NombreCategoria" Label="Nombre"
+                                  Required="true" RequiredError="El nombre es obligatorio."
+                                  ReadOnly="@SoloLectura" Margin="Margin.Dense" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="12" md="12">
+                    <MudTextField @bind-Value="entity.Descripcion" Label="Descripción"
+                                  ReadOnly="@SoloLectura" Margin="Margin.Dense" Variant="Variant.Outlined" Lines="3" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudCheckBox @bind-Value="entity.Activo" Label="Activo" ReadOnly="@SoloLectura" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo == "Eliminar")
+        {
+            <MudButton OnClick="Eliminar" Color="Color.Error" Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Delete">
+                Eliminar
+            </MudButton>
+        }
+        @if (Modo != "Ver" && Modo != "Eliminar")
+        {
+            <MudButton OnClick="Guardar" Color="Color.Success" Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Save" Disabled="!success">
+                Guardar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+
+    private bool SoloLectura;
+    private bool success = true;
+    private string[] errors = { };
+    private CategoriaQueja entity = new();
+    private MudForm? form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver" || Modo == "Eliminar";
+
+        if (ID > 0)
+        {
+            var item = await Context.CategoriasQueja.FindAsync(ID);
+            if (item != null) entity = item;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Modo != "Ver" && Modo != "Eliminar")
+        {
+            form?.Validate();
+            StateHasChanged();
+        }
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task Guardar()
+    {
+        var confirm = await DialogService.ShowMessageBox("Confirmar", "¿Desea guardar los cambios?",
+            yesText: "Guardar", cancelText: "Cancelar");
+        if (confirm != true) return;
+
+        try
+        {
+            if (Modo == "Insertar")
+                Context.CategoriasQueja.Add(entity);
+            else
+                Context.CategoriasQueja.Update(entity);
+
+            await Context.SaveChangesAsync();
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Categoría guardada correctamente.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            var inner = ex.InnerException?.Message ?? ex.Message;
+            Snackbar.Add($"Error: {inner}", Severity.Error);
+        }
+    }
+
+    private async Task Eliminar()
+    {
+        var confirm = await DialogService.ShowMessageBox("Confirmar", "¿Desea eliminar esta categoría?",
+            yesText: "Eliminar", cancelText: "Cancelar");
+        if (confirm != true) return;
+
+        try
+        {
+            Context.CategoriasQueja.Remove(entity);
+            await Context.SaveChangesAsync();
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Categoría eliminada correctamente.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            var inner = ex.InnerException?.Message ?? ex.Message;
+            bool esFK = inner.Contains("REFERENCE") || inner.Contains("constraint");
+            Snackbar.Add(esFK ? "No se puede eliminar: tiene registros asociados." : $"Error: {inner}", Severity.Error);
+        }
+    }
+}

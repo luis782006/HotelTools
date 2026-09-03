@@ -1,0 +1,221 @@
+@using Microsoft.EntityFrameworkCore
+@using HotelTools.Services
+@inject HotelContext Context
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                @if (Modo == "Insertar")
+                {
+                    <MudItem xs="12" md="12">
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudTextField @bind-Value="huespedNombreSeleccionado" Label="Huésped" ReadOnly="true"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1;" />
+                            <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="AbrirSeleccionarHuesped"
+                                       StartIcon="@Icons.Material.Filled.Search">Seleccionar</MudButton>
+                        </MudStack>
+                        @if (entity.ID_Huesped > 0 && !string.IsNullOrEmpty(huespedNombreSeleccionado))
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-1">
+                                Huésped seleccionado: @huespedNombreSeleccionado (ID: @entity.ID_Huesped)
+                            </MudText>
+                        }
+                    </MudItem>
+                }
+
+                <MudItem xs="12" md="12">
+                    <MudTextField @bind-Value="entity.Quejas" Label="Título / Descripción de la Queja" Required="true"
+                                  RequiredError="El título es obligatorio." ReadOnly="@SoloLectura"
+                                  Margin="Margin.Dense" Variant="Variant.Outlined" Lines="3" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="decimal" @bind-Value="entity.ID_Prioridad" Label="Prioridad" Required="true"
+                               ReadOnly="@SoloLectura" Variant="Variant.Outlined" Dense="true">
+                        @foreach (var pri in lstPrioridades)
+                        {
+                            <MudSelectItem T="decimal" Value="@pri.ID_Prioridad">
+                                @(pri.NombrePrioridad switch { 1 => "Baja", 2 => "Media", 3 => "Alta", 4 => "Crítica", _ => "N/D" })
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="decimal" @bind-Value="entity.ID_DepartamentoRecibe" Label="Depto Receptor" Required="true"
+                               RequiredError="El departamento receptor es obligatorio." ReadOnly="@SoloLectura"
+                               Variant="Variant.Outlined" Dense="true">
+                        @foreach (var d in lstDeptos)
+                        {
+                            <MudSelectItem T="decimal" Value="@d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="decimal" @bind-Value="entity.ID_DepartamentoEjecuta" Label="Depto Ejecutor" Required="true"
+                               RequiredError="El departamento ejecutor es obligatorio." ReadOnly="@SoloLectura"
+                               Variant="Variant.Outlined" Dense="true">
+                        @foreach (var d in lstDeptos)
+                        {
+                            <MudSelectItem T="decimal" Value="@d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                @if (Modo != "Insertar")
+                {
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="decimal?" @bind-Value="entity.ID_Estado" Label="Estado" ReadOnly="true"
+                                   Variant="Variant.Outlined" Dense="true">
+                            @foreach (var est in lstEstados)
+                            {
+                                <MudSelectItem T="decimal?" Value="@est.ID_Estado">@est.NombreEstado</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="decimal?" @bind-Value="entity.ID_EmpleadoAsignacion" Label="Empleado Asignado"
+                                   ReadOnly="@SoloLectura" Variant="Variant.Outlined" Dense="true">
+                            <MudSelectItem T="decimal?" Value="@((decimal?)null)">Sin asignar</MudSelectItem>
+                            @foreach (var emp in lstEmpleados)
+                            {
+                                <MudSelectItem T="decimal?" Value="@emp.ID_Empleado">
+                                    @($"{emp.Nombre?.Trim()} {emp.Apellido?.Trim()}")
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo != "Ver")
+        {
+            <MudButton OnClick="Guardar" Color="Color.Success" Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Save" Disabled="!success">
+                Guardar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+    [Parameter] public string? HuespedNombreInicial { get; set; }
+    [Parameter] public decimal? HuespedIdInicial { get; set; }
+
+    private bool SoloLectura;
+    private bool success = true;
+    private string[] errors = { };
+    private Queja entity = new();
+    private MudForm? form;
+    private string huespedNombreSeleccionado = "";
+
+    private List<PrioridadQueja> lstPrioridades = new();
+    private List<EstadoQueja> lstEstados = new();
+    private List<Departamento> lstDeptos = new();
+    private List<Empleado> lstEmpleados = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver";
+
+        lstPrioridades = await Context.PrioridadesQueja.AsNoTracking().ToListAsync();
+        lstEstados = await Context.EstadosQueja.AsNoTracking().ToListAsync();
+        lstDeptos = await Context.Departamentos.AsNoTracking().OrderBy(d => d.NombreDepartamento).ToListAsync();
+        lstEmpleados = await Context.Empleados.AsNoTracking().OrderBy(e => e.Nombre).ToListAsync();
+
+        if (ID > 0)
+        {
+            var item = await Context.Quejas.FindAsync(ID);
+            if (item != null)
+            {
+                entity = item;
+                huespedNombreSeleccionado = await ObtenerNombreHuesped(entity.ID_Huesped);
+            }
+        }
+        else
+        {
+            entity.ID_Estado = lstEstados.FirstOrDefault(e => e.NombreEstado == "Nuevo")?.ID_Estado ?? 1;
+            entity.ID_Empleado = 1; // Default, should be set from session
+
+            if (HuespedIdInicial.HasValue && HuespedIdInicial > 0)
+            {
+                entity.ID_Huesped = HuespedIdInicial.Value;
+                huespedNombreSeleccionado = HuespedNombreInicial ?? await ObtenerNombreHuesped(entity.ID_Huesped);
+            }
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Modo != "Ver")
+        {
+            form?.Validate();
+            StateHasChanged();
+        }
+    }
+
+    private async Task<string> ObtenerNombreHuesped(decimal idHuesped)
+    {
+        var h = await Context.Huespedes.FindAsync(idHuesped);
+        return h != null ? $"{h.Nombre?.Trim()} {h.Apellido?.Trim()}" : "";
+    }
+
+    private async Task AbrirSeleccionarHuesped()
+    {
+        var parameters = new DialogParameters { { "HuespedIdActual", entity.ID_Huesped } };
+        var dialog = await DialogService.ShowAsync<D_SeleccionarHuesped>("SELECCIONAR HUÉSPED", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true });
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled && result.Data is Huesped huesped)
+        {
+            entity.ID_Huesped = huesped.ID_Huesped;
+            huespedNombreSeleccionado = $"{huesped.Nombre?.Trim()} {huesped.Apellido?.Trim()}";
+            StateHasChanged();
+        }
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task Guardar()
+    {
+        var confirm = await DialogService.ShowMessageBox("Confirmar", "¿Desea guardar los cambios?",
+            yesText: "Guardar", cancelText: "Cancelar");
+        if (confirm != true) return;
+
+        try
+        {
+            if (Modo == "Insertar")
+            {
+                Context.Quejas.Add(entity);
+            }
+            else
+            {
+                Context.Quejas.Update(entity);
+            }
+
+            await Context.SaveChangesAsync();
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Queja guardada correctamente.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            var inner = ex.InnerException?.Message ?? ex.Message;
+            Snackbar.Add($"Error: {inner}", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,67 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+
+<MudDialog>
+    <DialogContent>
+        @if (historial.Any())
+        {
+            <MudTimeline>
+                @foreach (var h in historial.OrderByDescending(h => h.FechaRegistro))
+                {
+                    <MudTimelineItem>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Primary">
+                            @h.FechaRegistro.ToString("dd/MM/yyyy HH:mm")
+                        </MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Estado: @GetNombreEstado(h.ID_Estado) | Empleado: @GetNombreEmpleado(h.ID_Empleado)
+                        </MudText>
+                        @if (!string.IsNullOrWhiteSpace(h.observaciones))
+                        {
+                            <MudText Typo="Typo.body1">@h.observaciones</MudText>
+                        }
+                        @if (h.Aprobado)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Success">Aprobado</MudText>
+                        }
+                    </MudTimelineItem>
+                }
+            </MudTimeline>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Sin registros de historial.</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cerrar" Color="Color.Default" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Close">Cerrar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public decimal IDQueja { get; set; }
+
+    private List<HistorialQueja> historial = new();
+    private List<EstadoQueja> lstEstados = new();
+    private List<Empleado> lstEmpleados = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        lstEstados = await Context.EstadosQueja.AsNoTracking().ToListAsync();
+        lstEmpleados = await Context.Empleados.AsNoTracking().ToListAsync();
+        historial = await Context.HistorialQuejas
+            .Where(h => h.ID_Quejas == IDQueja)
+            .ToListAsync();
+    }
+
+    private string GetNombreEstado(decimal id) => lstEstados.FirstOrDefault(e => e.ID_Estado == id)?.NombreEstado ?? "N/D";
+
+    private string GetNombreEmpleado(decimal id)
+    {
+        var emp = lstEmpleados.FirstOrDefault(e => e.ID_Empleado == id);
+        return emp != null ? $"{emp.Nombre?.Trim()} {emp.Apellido?.Trim()}" : "N/D";
+    }
+
+    private void Cerrar() => MudDialog.Cancel();
+}

@@ -1,0 +1,170 @@
+@page "/dashboardquejas"
+@attribute [Authorize(Policy = "ViewQuejas")]
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+
+<ValidaPermiso PermisoRequerido="ViewQuejas" Objeto="DashboardQuejas" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4" Class="mb-4">Dashboard de Quejas</MudText>
+
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="4" Class="pa-4 mud-text-align-center">
+                <MudText Typo="Typo.h3" Color="Color.Primary">@totalQuejas</MudText>
+                <MudText Typo="Typo.subtitle1">Total Quejas</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="4" Class="pa-4 mud-text-align-center">
+                <MudText Typo="Typo.h3" Color="Color.Warning">@quejasNuevas</MudText>
+                <MudText Typo="Typo.subtitle1">Nuevas</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="4" Class="pa-4 mud-text-align-center">
+                <MudText Typo="Typo.h3" Color="Color.Info">@quejasEnProceso</MudText>
+                <MudText Typo="Typo.subtitle1">En Proceso</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="4" Class="pa-4 mud-text-align-center">
+                <MudText Typo="Typo.h3" Color="Color.Success">@quejasResueltas</MudText>
+                <MudText Typo="Typo.subtitle1">Resueltas</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="4" Class="pa-4 mud-text-align-center">
+                <MudText Typo="Typo.h3" Color="Color.Secondary">@quejasPendientesAprobacion</MudText>
+                <MudText Typo="Typo.subtitle1">Pendientes Aprobación</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="4" Class="pa-4 mud-text-align-center">
+                <MudText Typo="Typo.h3" Color="Color.Default">@quejasCerradas</MudText>
+                <MudText Typo="Typo.subtitle1">Cerradas</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="4" Class="pa-4 mud-text-align-center">
+                <MudText Typo="Typo.h3" Color="Color.Error">@quejasRechazadas</MudText>
+                <MudText Typo="Typo.subtitle1">Rechazadas</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Elevation="4" Class="pa-4 mud-text-align-center">
+                <MudText Typo="Typo.h3" Color="Color.Error">@quejasVencidasSLA</MudText>
+                <MudText Typo="Typo.subtitle1">Vencidas SLA</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="4" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Por Prioridad</MudText>
+                @foreach (var item in porPrioridad)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-1">
+                        <MudChip T="string" Size="Size.Small" Style="@($"background: {item.Color}; color: #fff;")">
+                            @item.Nombre
+                        </MudChip>
+                        <MudProgressLinear Value="@item.Porcentaje" Color="Color.Primary" Class="flex-grow-1" />
+                        <MudText Typo="Typo.body2">@item.Conteo</MudText>
+                    </MudStack>
+                }
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="4" Class="pa-4">
+                <MudText Typo="Typo.h6" Class="mb-2">Por Departamento Ejecutor</MudText>
+                @foreach (var item in porDepto)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-1">
+                        <MudText Typo="Typo.body2" Style="width:150px;">@item.Nombre</MudText>
+                        <MudProgressLinear Value="@item.Porcentaje" Color="Color.Info" Class="flex-grow-1" />
+                        <MudText Typo="Typo.body2">@item.Conteo</MudText>
+                    </MudStack>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private int totalQuejas = 0;
+    private int quejasNuevas = 0;
+    private int quejasEnProceso = 0;
+    private int quejasResueltas = 0;
+    private int quejasPendientesAprobacion = 0;
+    private int quejasCerradas = 0;
+    private int quejasRechazadas = 0;
+    private int quejasVencidasSLA = 0;
+
+    private List<EstadisticaItem> porPrioridad = new();
+    private List<EstadisticaItem> porDepto = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var quejas = await Context.Quejas.AsNoTracking().ToListAsync();
+        var estados = await Context.EstadosQueja.AsNoTracking().ToListAsync();
+        var prioridades = await Context.PrioridadesQueja.AsNoTracking().ToListAsync();
+        var deptos = await Context.Departamentos.AsNoTracking().ToListAsync();
+
+        totalQuejas = quejas.Count;
+
+        foreach (var est in estados)
+        {
+            var conteo = quejas.Count(q => q.ID_Estado == est.ID_Estado);
+            switch (est.NombreEstado)
+            {
+                case "Nuevo": quejasNuevas = conteo; break;
+                case "En Proceso": quejasEnProceso = conteo; break;
+                case "Resuelto": quejasResueltas = conteo; break;
+                case "Pendiente Aprobación": quejasPendientesAprobacion = conteo; break;
+                case "Cerrado": quejasCerradas = conteo; break;
+                case "Rechazado": quejasRechazadas = conteo; break;
+            }
+        }
+
+        foreach (var pri in prioridades)
+        {
+            var conteo = quejas.Count(q => q.ID_Prioridad == pri.ID_Prioridad);
+            porPrioridad.Add(new EstadisticaItem
+            {
+                Nombre = pri.NombrePrioridad switch { 1 => "Baja", 2 => "Media", 3 => "Alta", 4 => "Crítica", _ => "N/D" },
+                Conteo = conteo,
+                Porcentaje = totalQuejas > 0 ? (double)conteo / totalQuejas * 100 : 0,
+                Color = pri.Color
+            });
+        }
+
+        var deptosConQuejas = quejas
+            .Where(q => q.ID_DepartamentoEjecuta > 0)
+            .GroupBy(q => q.ID_DepartamentoEjecuta)
+            .OrderByDescending(g => g.Count());
+
+        foreach (var g in deptosConQuejas)
+        {
+            var depto = deptos.FirstOrDefault(d => d.ID_Departamento == g.Key);
+            porDepto.Add(new EstadisticaItem
+            {
+                Nombre = depto?.NombreDepartamento ?? "N/D",
+                Conteo = g.Count(),
+                Porcentaje = totalQuejas > 0 ? (double)g.Count() / totalQuejas * 100 : 0,
+                Color = "#1976d2"
+            });
+        }
+    }
+
+    private class EstadisticaItem
+    {
+        public string Nombre { get; set; } = "";
+        public int Conteo { get; set; }
+        public double Porcentaje { get; set; }
+        public string Color { get; set; } = "#888";
+    }
+}
