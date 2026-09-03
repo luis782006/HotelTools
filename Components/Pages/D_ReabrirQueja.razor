@@ -1,0 +1,33 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body1" Class="mb-4">¿Desea reabrir esta queja? Solo se permite dentro de las 24 horas posteriores al cierre.</MudText>
+        <MudTextField @bind-Value="motivo" Label="Motivo de reapertura" Required="true"
+                      Lines="3" Variant="Variant.Outlined" Margin="Margin.Dense" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Cancel">Cancelar</MudButton>
+        <MudButton OnClick="Reabrir" Color="Color.Warning" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Replay" Disabled="string.IsNullOrWhiteSpace(motivo)">
+            Reabrir
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    private string motivo = "";
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private void Reabrir()
+    {
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+        Snackbar.Add("Queja reabierta correctamente.", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}

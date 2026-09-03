@@ -1,0 +1,125 @@
+@page "/listacategoriasqueja"
+@attribute [Authorize(Policy = "ManageQuejasConfig")]
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject IDialogService DialogService
+
+<ValidaPermiso PermisoRequerido="ManageQuejasConfig" Objeto="ListaCategoriasQueja" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4" Class="mb-4">Categorías de Queja</MudText>
+    <MudPaper Elevation="4" Class="pa-4">
+        <MudPaper Style="width:100%;">
+            @if (Cargando)
+            {
+                <MudStack AlignItems="AlignItems.Center" Class="py-8">
+                    <MudText Typo="Typo.h6">Cargando registros...</MudText>
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                </MudStack>
+            }
+            else
+            {
+                <MudTable Items="@lstCategorias" Dense="true" Hover="true" Striped="true" FixedHeader="true"
+                          Breakpoint="Breakpoint.Md" Filter="new Func<CategoriaQueja,bool>(FilterFunc1)"
+                          @bind-SelectedItem="selectedItem">
+                    <ToolBarContent>
+                        <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" Style="width:300px;" />
+                        <MudSpacer />
+                        <MudFab Color="Color.Success" StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                                OnClick="@(() => AccionItem(maxWidth, "Insertar", 0))" />
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Acciones</MudTh>
+                        <MudTh>Nombre</MudTh>
+                        <MudTh>Descripción</MudTh>
+                        <MudTh>Activo</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Acciones">
+                            <MudTooltip Text="Ver">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Info" Color="Color.Info"
+                                               OnClick="@(() => AccionItem(maxWidth, "Ver", context.ID_CategoriaQueja))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Editar">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Edit" Color="Color.Success"
+                                               OnClick="@(() => AccionItem(maxWidth, "Editar", context.ID_CategoriaQueja))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Eliminar">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               OnClick="@(() => AccionItem(maxWidth, "Eliminar", context.ID_CategoriaQueja))" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd DataLabel="Nombre">@context.NombreCategoria</MudTd>
+                        <MudTd DataLabel="Descripción">@context.Descripcion</MudTd>
+                        <MudTd DataLabel="Activo">
+                            <MudCheckBox @bind-Value="context.Activo" ReadOnly="true" />
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por Página."
+                                       InfoFormat="Filas {first_item}-{last_item} de {all_items}"
+                                       PageSizeOptions="new int[] { 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private MudTable<CategoriaQueja> table;
+    private string searchString = "";
+    private string infoFormat = "{first_item}-{last_item} de {all_items}";
+    private bool Cargando = true;
+    private List<CategoriaQueja> lstCategorias = new();
+    private CategoriaQueja selectedItem = null;
+
+    private DialogOptions maxWidth = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        lstCategorias = await Context.CategoriasQueja.AsNoTracking()
+            .OrderBy(c => c.NombreCategoria)
+            .ToListAsync();
+    }
+
+    private bool FilterFunc1(CategoriaQueja element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(CategoriaQueja element, string search)
+    {
+        if (string.IsNullOrWhiteSpace(search)) return true;
+        if (element.NombreCategoria.Contains(search, StringComparison.OrdinalIgnoreCase)) return true;
+        if (element.Descripcion != null && element.Descripcion.Contains(search, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+    private async Task AccionItem(DialogOptions options, string modo, decimal id)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Modo", modo },
+            { "ID", id }
+        };
+        var dialog = await DialogService.ShowAsync<D_CategoriaQueja>(modo.ToUpper() + " CATEGORÍA", parameters, options);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            Cargando = true;
+            StateHasChanged();
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+}

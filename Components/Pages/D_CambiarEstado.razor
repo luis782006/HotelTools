@@ -1,0 +1,151 @@
+@using Microsoft.EntityFrameworkCore
+@using HotelTools.Services
+@inject HotelContext Context
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            @if (esAsignacion)
+            {
+                <MudItem xs="12">
+                    <MudSelect T="decimal?" @bind-Value="empleadoAsignado" Label="Empleado Asignado"
+                               Variant="Variant.Outlined" Dense="true">
+                        <MudSelectItem T="decimal?" Value="@((decimal?)null)">Sin asignar</MudSelectItem>
+                        @foreach (var emp in lstEmpleados)
+                        {
+                            <MudSelectItem T="decimal?" Value="@emp.ID_Empleado">
+                                @($"{emp.Nombre?.Trim()} {emp.Apellido?.Trim()}")
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12">
+                    <MudSelect T="decimal" @bind-Value="nuevoEstadoId" Label="Nuevo Estado" Required="true"
+                               Variant="Variant.Outlined" Dense="true">
+                        @foreach (var est in lstEstadosValidos)
+                        {
+                            <MudSelectItem T="decimal" Value="@est.ID_Estado">@est.NombreEstado</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            }
+            <MudItem xs="12">
+                <MudTextField @bind-Value="observaciones" Label="Observaciones" Lines="3"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Cancel">Cancelar</MudButton>
+        <MudButton OnClick="Confirmar" Color="Color.Success" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Check" Disabled="@(esAsignacion ? !empleadoAsignado.HasValue : nuevoEstadoId <= 0)">
+            Confirmar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public decimal IDQueja { get; set; }
+    [Parameter] public decimal? IDEmpleadoActual { get; set; }
+    [Parameter] public decimal? EstadoActualId { get; set; }
+
+    private bool esAsignacion;
+    private decimal? empleadoAsignado;
+    private decimal nuevoEstadoId;
+    private string observaciones = "";
+    private List<EstadoQueja> lstEstados = new();
+    private List<EstadoQueja> lstEstadosValidos = new();
+    private List<Empleado> lstEmpleados = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        esAsignacion = EstadoActualId == null;
+        lstEstados = await Context.EstadosQueja.AsNoTracking().ToListAsync();
+        lstEmpleados = await Context.Empleados.AsNoTracking().OrderBy(e => e.Nombre).ToListAsync();
+
+        if (esAsignacion)
+        {
+            empleadoAsignado = IDEmpleadoActual;
+        }
+        else
+        {
+            var estadoActual = lstEstados.FirstOrDefault(e => e.ID_Estado == EstadoActualId);
+            if (estadoActual != null)
+            {
+                var transiciones = new Dictionary<string, string[]>
+                {
+                    ["Nuevo"] = new[] { "Asignado", "Rechazado" },
+                    ["Asignado"] = new[] { "En Proceso", "Rechazado" },
+                    ["En Proceso"] = new[] { "Pendiente Aprobación", "Resuelto", "Rechazado" },
+                    ["Pendiente Aprobación"] = new[] { "En Proceso", "Resuelto" },
+                    ["Resuelto"] = new[] { "Cerrado" },
+                    ["Cerrado"] = new[] { "En Proceso" },
+                    ["Rechazado"] = Array.Empty<string>()
+                };
+
+                if (transiciones.TryGetValue(estadoActual.NombreEstado, out var siguientes))
+                {
+                    lstEstadosValidos = siguientes
+                        .Select(nombre => lstEstados.FirstOrDefault(e => e.NombreEstado == nombre))
+                        .Where(e => e != null)
+                        .ToList()!;
+                }
+            }
+        }
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task Confirmar()
+    {
+        try
+        {
+            if (esAsignacion)
+            {
+                var queja = await Context.Quejas.FindAsync(IDQueja);
+                if (queja != null)
+                {
+                    queja.ID_EmpleadoAsignacion = empleadoAsignado;
+                    await Context.SaveChangesAsync();
+                    Snackbar.Add("Asignación guardada.", Severity.Success);
+                }
+            }
+            else
+            {
+                var queja = await Context.Quejas.FindAsync(IDQueja);
+                if (queja != null)
+                {
+                    queja.ID_Estado = nuevoEstadoId;
+                    await Context.SaveChangesAsync();
+
+                    var hist = new HistorialQueja
+                    {
+                        ID_Quejas = IDQueja,
+                        ID_Empleado = 1,
+                        ID_Estado = nuevoEstadoId,
+                        observaciones = observaciones?.Length > 10 ? observaciones.Substring(0, 10) : observaciones,
+                        ID_Imagen = 0,
+                        ID_Compra = 0,
+                        Aprobado = false,
+                        FechaRegistro = DateTime.Now
+                    };
+                    Context.HistorialQuejas.Add(hist);
+                    await Context.SaveChangesAsync();
+                    Snackbar.Add("Estado cambiado correctamente.", Severity.Success);
+                }
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+}

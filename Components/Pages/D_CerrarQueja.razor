@@ -1,0 +1,36 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body1" Class="mb-4">¿Desea cerrar esta queja? El huésped recibirá una encuesta de satisfacción.</MudText>
+        <MudNumericField @bind-Value="calificacion" Label="Calificación (1-5)" Min="1" Max="5"
+                         Variant="Variant.Outlined" Margin="Margin.Dense" />
+        <MudTextField @bind-Value="comentario" Label="Comentario del huésped (opcional)" Lines="2"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-2" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Cancel">Cancelar</MudButton>
+        <MudButton OnClick="Cerrar" Color="Color.Success" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.CheckCircle" Disabled="@(calificacion < 1 || calificacion > 5)">
+            Cerrar Queja
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    private int calificacion = 5;
+    private string comentario = "";
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private void Cerrar()
+    {
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+        Snackbar.Add("Queja cerrada correctamente. Encuesta enviada al huésped.", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}

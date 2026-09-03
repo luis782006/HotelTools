@@ -1,0 +1,291 @@
+@page "/queja/{IdQueja}"
+@attribute [Authorize(Policy = "ViewQuejas")]
+@using Microsoft.EntityFrameworkCore
+@using HotelTools.Services
+@inject HotelContext Context
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<ValidaPermiso PermisoRequerido="ViewQuejas" Objeto="DetalleQueja" />
+
+<MudContainer MaxWidth="MaxWidth.False">
+    @if (Cargando)
+    {
+        <MudStack AlignItems="AlignItems.Center" Class="py-8">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+        </MudStack>
+    }
+    else if (queja == null)
+    {
+        <MudAlert Severity="Severity.Error">Queja no encontrada.</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12" md="8">
+                <MudPaper Elevation="4" Class="pa-4">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                        <MudText Typo="Typo.h5">Queja #@queja.ID_Quejas</MudText>
+                        <MudChip T="string" Size="Size.Medium" Variant="Variant.Filled"
+                                 Style="@GetEstadoStyle(estadoActual?.NombreEstado ?? "")">
+                            @(estadoActual?.NombreEstado ?? "N/D")
+                        </MudChip>
+                    </MudStack>
+
+                    <MudDivider Class="my-2" />
+
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Título</MudText>
+                            <MudText>@queja.Quejas</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Huésped</MudText>
+                            <MudText>@huespedNombre</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Prioridad</MudText>
+                            <MudChip T="string" Size="Size.Small" Style="@($"background: {prioridadActual?.Color ?? "#888"}; color: #fff;")">
+                                @(GetNombrePrioridad(prioridadActual?.NombrePrioridad ?? 0))
+                            </MudChip>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Depto Receptor</MudText>
+                            <MudText>@deptoReceptor</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Depto Ejecutor</MudText>
+                            <MudText>@deptoEjecutor</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Empleado Asignado</MudText>
+                            <MudText>@(empleadoAsignado ?? "Sin asignar")</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="4" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Acciones</MudText>
+                    <MudStack Spacing="2">
+                        @if (PuedeAsignar())
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Info" FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.PersonAdd" OnClick="AbrirAsignar">
+                                Asignar / Reasignar
+                            </MudButton>
+                        }
+                        @if (PuedeCambiarEstado())
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Warning" FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.SwapHoriz" OnClick="AbrirCambiarEstado">
+                                Cambiar Estado
+                            </MudButton>
+                        }
+                        @if (PuedeAprobarCompra())
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.ShoppingCart" OnClick="AbrirAprobarCompra">
+                                Aprobar/Rechazar Compra
+                            </MudButton>
+                        }
+                        @if (PuedeCerrar())
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Success" FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.CheckCircle" OnClick="AbrirCerrar">
+                                Cerrar Queja
+                            </MudButton>
+                        }
+                        @if (PuedeReabrir())
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Error" FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.Replay" OnClick="AbrirReabrir">
+                                Reabrir Queja
+                            </MudButton>
+                        }
+                        <MudButton Variant="Variant.Outlined" Color="Color.Default" FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.History" OnClick="AbrirHistorial">
+                            Ver Historial
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudPaper Elevation="4" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Historial de Cambios</MudText>
+                    @if (historial.Any())
+                    {
+                        <MudTimeline>
+                            @foreach (var h in historial.OrderByDescending(h => h.FechaRegistro))
+                            {
+                                <MudTimelineItem>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @h.FechaRegistro.ToString("dd/MM/yyyy HH:mm") - @GetNombreEstado(h.ID_Estado)
+                                    </MudText>
+                                    @if (!string.IsNullOrWhiteSpace(h.observaciones))
+                                    {
+                                        <MudText Typo="Typo.body1">@h.observaciones</MudText>
+                                    }
+                                </MudTimelineItem>
+                            }
+                        </MudTimeline>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Sin registros de historial.</MudText>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public string IdQueja { get; set; }
+
+    private bool Cargando = true;
+    private Queja? queja;
+    private List<HistorialQueja> historial = new();
+    private EstadoQueja? estadoActual;
+    private PrioridadQueja? prioridadActual;
+    private string huespedNombre = "";
+    private string deptoReceptor = "";
+    private string deptoEjecutor = "";
+    private string? empleadoAsignado;
+    private List<EstadoQueja> lstEstados = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        lstEstados = await Context.EstadosQueja.AsNoTracking().ToListAsync();
+
+        if (decimal.TryParse(IdQueja, out var id))
+        {
+            queja = await Context.Quejas.FindAsync(id);
+            if (queja != null)
+            {
+                estadoActual = lstEstados.FirstOrDefault(e => e.ID_Estado == queja.ID_Estado);
+                prioridadActual = await Context.PrioridadesQueja.FindAsync(queja.ID_Prioridad);
+
+                var huesped = await Context.Huespedes.FindAsync(queja.ID_Huesped);
+                huespedNombre = huesped != null ? $"{huesped.Nombre?.Trim()} {huesped.Apellido?.Trim()}" : "";
+
+                var dr = await Context.Departamentos.FindAsync(queja.ID_DepartamentoRecibe);
+                deptoReceptor = dr?.NombreDepartamento ?? "";
+
+                var de = await Context.Departamentos.FindAsync(queja.ID_DepartamentoEjecuta);
+                deptoEjecutor = de?.NombreDepartamento ?? "";
+
+                if (queja.ID_EmpleadoAsignacion.HasValue)
+                {
+                    var emp = await Context.Empleados.FindAsync(queja.ID_EmpleadoAsignacion.Value);
+                    empleadoAsignado = emp != null ? $"{emp.Nombre?.Trim()} {emp.Apellido?.Trim()}" : null;
+                }
+
+                historial = await Context.HistorialQuejas
+                    .Where(h => h.ID_Quejas == queja.ID_Quejas)
+                    .ToListAsync();
+            }
+        }
+    }
+
+    private bool PuedeAsignar() => queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Nuevo")?.ID_Estado
+        || queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Asignado")?.ID_Estado;
+
+    private bool PuedeCambiarEstado() => queja?.ID_Estado != lstEstados.FirstOrDefault(e => e.NombreEstado == "Cerrado")?.ID_Estado
+        && queja?.ID_Estado != lstEstados.FirstOrDefault(e => e.NombreEstado == "Rechazado")?.ID_Estado;
+
+    private bool PuedeAprobarCompra() => queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Pendiente Aprobación")?.ID_Estado;
+
+    private bool PuedeCerrar() => queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Resuelto")?.ID_Estado;
+
+    private bool PuedeReabrir() => queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Cerrado")?.ID_Estado;
+
+    private async Task AbrirAsignar()
+    {
+        var parameters = new DialogParameters { { "IDQueja", queja!.ID_Quejas }, { "IDEmpleadoActual", queja.ID_EmpleadoAsignacion } };
+        var dialog = await DialogService.ShowAsync<D_CambiarEstado>("ASIGNAR QUEJA", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) await Recargar();
+    }
+
+    private async Task AbrirCambiarEstado()
+    {
+        var parameters = new DialogParameters { { "IDQueja", queja!.ID_Quejas }, { "EstadoActualId", queja.ID_Estado } };
+        var dialog = await DialogService.ShowAsync<D_CambiarEstado>("CAMBIAR ESTADO", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) await Recargar();
+    }
+
+    private async Task AbrirAprobarCompra()
+    {
+        var dialog = await DialogService.ShowAsync<D_AprobarCompra>("APROBAR COMPRA",
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) await Recargar();
+    }
+
+    private async Task AbrirCerrar()
+    {
+        var dialog = await DialogService.ShowAsync<D_CerrarQueja>("CERRAR QUEJA", 
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) await Recargar();
+    }
+
+    private async Task AbrirReabrir()
+    {
+        var dialog = await DialogService.ShowAsync<D_ReabrirQueja>("REABRIR QUEJA",
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true });
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) await Recargar();
+    }
+
+    private async Task AbrirHistorial()
+    {
+        var parameters = new DialogParameters { { "IDQueja", queja!.ID_Quejas } };
+        await DialogService.ShowAsync<D_VerHistorial>("HISTORIAL DE QUEJA", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true });
+    }
+
+    private async Task Recargar()
+    {
+        Cargando = true;
+        StateHasChanged();
+        await CargarDatos();
+        Cargando = false;
+        StateHasChanged();
+    }
+
+    private string GetNombrePrioridad(int p) => p switch
+    {
+        1 => "Baja", 2 => "Media", 3 => "Alta", 4 => "Crítica", _ => "N/D"
+    };
+
+    private string GetNombreEstado(decimal id) => lstEstados.FirstOrDefault(e => e.ID_Estado == id)?.NombreEstado ?? "N/D";
+
+    private string GetEstadoStyle(string estado) => estado switch
+    {
+        "Nuevo" => "background: #1565c0; color: #fff;",
+        "Asignado" => "background: #e65100; color: #fff;",
+        "En Proceso" => "background: #f9a825; color: #000;",
+        "Pendiente Aprobación" => "background: #6a1b9a; color: #fff;",
+        "Resuelto" => "background: #2e7d32; color: #fff;",
+        "Cerrado" => "background: #424242; color: #fff;",
+        "Rechazado" => "background: #c62828; color: #fff;",
+        _ => "background: #888; color: #fff;"
+    };
+}

@@ -1,0 +1,232 @@
+@page "/listaquejas"
+@attribute [Authorize(Policy = "ViewQuejas")]
+@using Microsoft.EntityFrameworkCore
+@using HotelTools.Services
+@inject HotelContext Context
+@inject IDialogService DialogService
+
+<ValidaPermiso PermisoRequerido="ViewQuejas" Objeto="ListaQuejas" />
+
+<MudContainer>
+    <MudText Typo="Typo.h4" Class="mb-4">Quejas</MudText>
+    <MudPaper Elevation="4" Class="pa-4">
+        <MudPaper Style="width:100%;">
+            @if (Cargando)
+            {
+                <MudStack AlignItems="AlignItems.Center" Class="py-8">
+                    <MudText Typo="Typo.h6">Cargando registros...</MudText>
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                </MudStack>
+            }
+            else
+            {
+                <MudTable Items="@lstQuejas" Dense="true" Hover="true" Striped="true" FixedHeader="true"
+                          Breakpoint="Breakpoint.Md" Filter="new Func<QuejaDto,bool>(FilterFunc1)"
+                          @bind-SelectedItem="selectedItem" RowsPerPage="25">
+                    <ToolBarContent>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" Style="width:250px;" />
+                            <MudSelect T="decimal?" @bind-Value="filtroEstado" Label="Estado" Clearable="true"
+                                       Variant="Variant.Outlined" Dense="true" Style="width:180px;">
+                                @foreach (var est in lstEstados)
+                                {
+                                    <MudSelectItem T="decimal?" Value="@est.ID_Estado">@est.NombreEstado</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudSelect T="decimal?" @bind-Value="filtroPrioridad" Label="Prioridad" Clearable="true"
+                                       Variant="Variant.Outlined" Dense="true" Style="width:150px;">
+                                @foreach (var pri in lstPrioridades)
+                                {
+                                    <MudSelectItem T="decimal?" Value="@pri.ID_Prioridad">@(GetNombrePrioridad(pri.NombrePrioridad))</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudSelect T="decimal?" @bind-Value="filtroDepto" Label="Depto Ejecutor" Clearable="true"
+                                       Variant="Variant.Outlined" Dense="true" Style="width:180px;">
+                                @foreach (var d in lstDeptos)
+                                {
+                                    <MudSelectItem T="decimal?" Value="@d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudSelect T="decimal?" @bind-Value="filtroHabitacion" Label="Habitación" Clearable="true"
+                                       Variant="Variant.Outlined" Dense="true" Style="width:150px;">
+                                @foreach (var h in lstHabitaciones)
+                                {
+                                    <MudSelectItem T="decimal?" Value="@h.ID_NroHab">@h.DescripcionHab</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudDateRangePicker @bind-DateRange="filtroFechas" Label="Rango Fechas" Clearable="true"
+                                                Variant="Variant.Outlined" Dense="true" Style="width:280px;" />
+                        </MudStack>
+                        <MudSpacer />
+                        <MudFab Color="Color.Success" StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                                OnClick="() => CrearQueja()" />
+                    </ToolBarContent>
+                    <HeaderContent>
+                        <MudTh>Acciones</MudTh>
+                        <MudTh>ID</MudTh>
+                        <MudTh>Título</MudTh>
+                        <MudTh>Huésped</MudTh>
+                        <MudTh>Habitación</MudTh>
+                        <MudTh>Prioridad</MudTh>
+                        <MudTh>Estado</MudTh>
+                        <MudTh>Asignado a</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Acciones">
+                            <MudTooltip Text="Ver detalle">
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Visibility" Color="Color.Info"
+                                               Href="@($"/queja/{context.ID_Quejas}")" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd DataLabel="ID">@context.ID_Quejas</MudTd>
+                        <MudTd DataLabel="Título">
+                            <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Titulo</MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Huésped">@context.HuespedNombre</MudTd>
+                        <MudTd DataLabel="Habitación">@context.HabitacionNombre</MudTd>
+                        <MudTd DataLabel="Prioridad">
+                            <MudChip T="string" Size="Size.Small" Style="@($"background: {context.PrioridadColor}; color: #fff;")">
+                                @context.PrioridadNombre
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Estado">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                     Style="@GetEstadoStyle(context.EstadoNombre)">
+                                @context.EstadoNombre
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Asignado a">@(context.EmpleadoAsignado ?? "Sin asignar")</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager RowsPerPageString="Filas por Página."
+                                       InfoFormat="Filas {first_item}-{last_item} de {all_items}"
+                                       PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string searchString = "";
+    private bool Cargando = true;
+    private List<QuejaDto> lstQuejas = new();
+    private List<EstadoQueja> lstEstados = new();
+    private List<PrioridadQueja> lstPrioridades = new();
+    private List<Departamento> lstDeptos = new();
+    private List<Habitacion> lstHabitaciones = new();
+    private QuejaDto selectedItem = null;
+
+    private decimal? filtroEstado;
+    private decimal? filtroPrioridad;
+    private decimal? filtroDepto;
+    private decimal? filtroHabitacion;
+    private DateRange? filtroFechas;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CargarDatos()
+    {
+        lstEstados = await Context.EstadosQueja.AsNoTracking().ToListAsync();
+        lstPrioridades = await Context.PrioridadesQueja.AsNoTracking().ToListAsync();
+        lstDeptos = await Context.Departamentos.AsNoTracking().OrderBy(d => d.NombreDepartamento).ToListAsync();
+        lstHabitaciones = await Context.Habitaciones.AsNoTracking().OrderBy(h => h.DescripcionHab).ToListAsync();
+
+        var quejas = await Context.Quejas.AsNoTracking().ToListAsync();
+        var huespedes = await Context.Huespedes.AsNoTracking().ToListAsync();
+        var empleados = await Context.Empleados.AsNoTracking().ToListAsync();
+        var habitaciones = await Context.Habitaciones.AsNoTracking().ToListAsync();
+
+        lstQuejas = quejas.Select(q => new QuejaDto
+        {
+            ID_Quejas = q.ID_Quejas,
+            Titulo = q.Quejas,
+            HuespedNombre = huespedes.FirstOrDefault(h => h.ID_Huesped == q.ID_Huesped) is var hDto
+                ? $"{hDto?.Nombre?.Trim()} {hDto?.Apellido?.Trim()}" : "",
+            HabitacionNombre = habitaciones.FirstOrDefault(h => h.ID_NroHab == q.ID_Habitaciones)?.DescripcionHab ?? "",
+            PrioridadNombre = GetNombrePrioridad(lstPrioridades.FirstOrDefault(p => p.ID_Prioridad == q.ID_Prioridad)?.NombrePrioridad ?? 0),
+            PrioridadColor = lstPrioridades.FirstOrDefault(p => p.ID_Prioridad == q.ID_Prioridad)?.Color ?? "#888",
+            EstadoNombre = lstEstados.FirstOrDefault(e => e.ID_Estado == q.ID_Estado)?.NombreEstado ?? "",
+            EmpleadoAsignado = q.ID_EmpleadoAsignacion.HasValue
+                ? empleados.FirstOrDefault(e => e.ID_Empleado == q.ID_EmpleadoAsignacion) is var emp
+                    ? $"{emp?.Nombre?.Trim()} {emp?.Apellido?.Trim()}" : ""
+                : null
+        }).ToList();
+    }
+
+    private bool FilterFunc1(QuejaDto element) => FilterFunc(element, searchString);
+
+    private bool FilterFunc(QuejaDto element, string search)
+    {
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            if (!element.Titulo.Contains(search, StringComparison.OrdinalIgnoreCase) &&
+                !element.HuespedNombre.Contains(search, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+        if (filtroEstado.HasValue && element.EstadoNombre != lstEstados.FirstOrDefault(e => e.ID_Estado == filtroEstado)?.NombreEstado)
+            return false;
+        if (filtroPrioridad.HasValue && element.PrioridadNombre != GetNombrePrioridad(lstPrioridades.FirstOrDefault(p => p.ID_Prioridad == filtroPrioridad)?.NombrePrioridad ?? 0))
+            return false;
+        return true;
+    }
+
+    private async Task CrearQueja()
+    {
+        var parameters = new DialogParameters { { "Modo", "Insertar" }, { "ID", 0m } };
+        var dialog = await DialogService.ShowAsync<D_Queja>("NUEVA QUEJA", parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true });
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            Cargando = true;
+            StateHasChanged();
+            await CargarDatos();
+            Cargando = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetNombrePrioridad(int p) => p switch
+    {
+        1 => "Baja",
+        2 => "Media",
+        3 => "Alta",
+        4 => "Crítica",
+        _ => "N/D"
+    };
+
+    private string GetEstadoStyle(string estado) => estado switch
+    {
+        "Nuevo" => "background: #1565c0; color: #fff;",
+        "Asignado" => "background: #e65100; color: #fff;",
+        "En Proceso" => "background: #f9a825; color: #000;",
+        "Pendiente Aprobación" => "background: #6a1b9a; color: #fff;",
+        "Resuelto" => "background: #2e7d32; color: #fff;",
+        "Cerrado" => "background: #424242; color: #fff;",
+        "Rechazado" => "background: #c62828; color: #fff;",
+        _ => "background: #888; color: #fff;"
+    };
+
+    public class QuejaDto
+    {
+        public decimal ID_Quejas { get; set; }
+        public string Titulo { get; set; } = "";
+        public string HuespedNombre { get; set; } = "";
+        public string HabitacionNombre { get; set; } = "";
+        public string PrioridadNombre { get; set; } = "";
+        public string PrioridadColor { get; set; } = "#888";
+        public string EstadoNombre { get; set; } = "";
+        public string? EmpleadoAsignado { get; set; }
+    }
+}

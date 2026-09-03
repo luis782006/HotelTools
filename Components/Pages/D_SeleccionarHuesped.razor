@@ -1,0 +1,188 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" md="12">
+                <MudTextField @bind-Value="busquedaHuesped" Placeholder="Nombre, apellido..."
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="12">
+                @if (Cargando)
+                {
+                    <MudStack AlignItems="AlignItems.Center" Class="py-4">
+                        <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                    </MudStack>
+                }
+                else
+                {
+                    <MudTable Items="@lstHuespedesFiltrados" Dense="true" Hover="true" Striped="true"
+                              Breakpoint="Breakpoint.Md" Height="300px" FixedHeader="true" RowsPerPage="10">
+                        <HeaderContent>
+                            <MudTh>Seleccionar</MudTh>
+                            <MudTh>Nombre</MudTh>
+                            <MudTh>Apellido</MudTh>
+                            <MudTh>Ingreso</MudTh>
+                            <MudTh>Días Alojado</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Seleccionar">
+                                <MudRadio T="decimal?" Value="@context.ID_Huesped" SelectedValue="@huespedSeleccionadoId"
+                                          SelectedValueChanged="OnHuespedSeleccionado" Color="Color.Success" />
+                            </MudTd>
+                            <MudTd DataLabel="Nombre">@context.Nombre?.Trim()</MudTd>
+                            <MudTd DataLabel="Apellido">@context.Apellido?.Trim()</MudTd>
+                            <MudTd DataLabel="Ingreso">@context.FechaIn.ToString("dd/MM/yyyy")</MudTd>
+                            <MudTd DataLabel="Días Alojado">@context.DiasAlojados</MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager RowsPerPageString="Filas por página."
+                                           InfoFormat="Filas {first_item}-{last_item} de {all_items}" />
+                        </PagerContent>
+                    </MudTable>
+                }
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudDivider Class="my-2" />
+                <MudText Typo="Typo.h6" Class="mb-2">Crear Nuevo Huésped</MudText>
+            </MudItem>
+
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="nuevoHuesped.Nombre" Label="Nombre" Required="true"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="nuevoHuesped.Apellido" Label="Apellido" Required="true"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudDatePicker @bind-Date="fechaInSeleccionada" Label="Fecha Ingreso" Required="true"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudNumericField @bind-Value="nuevoHuesped.DiasAlojados" Label="Días Alojados" Min="0"
+                                 Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudDatePicker @bind-Date="fechaOutSeleccionada" Label="Fecha Salida (opcional)"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Cancel">Cancelar</MudButton>
+        <MudButton OnClick="CrearYSeleccionar" Color="Color.Info" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Add" Disabled="!PuedeCrearHuesped()">
+            Crear y Seleccionar
+        </MudButton>
+        <MudButton OnClick="ConfirmarSeleccion" Color="Color.Success" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Check" Disabled="!huespedSeleccionadoId.HasValue">
+            Seleccionar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public decimal? HuespedIdActual { get; set; }
+
+    private bool Cargando = true;
+    private string busquedaHuesped = "";
+    private List<Huesped> lstHuespedes = new();
+    private List<Huesped> lstHuespedesFiltrados = new();
+    private decimal? huespedSeleccionadoId;
+    private Huesped nuevoHuesped = new();
+    private DateTime? fechaInSeleccionada = DateTime.Today;
+    private DateTime? fechaOutSeleccionada;
+
+    protected override async Task OnInitializedAsync()
+    {
+        huespedSeleccionadoId = HuespedIdActual;
+        await CargarHuespedes();
+    }
+
+    private async Task CargarHuespedes()
+    {
+        Cargando = true;
+        lstHuespedes = await Context.Huespedes.AsNoTracking().ToListAsync();
+        lstHuespedesFiltrados = lstHuespedes;
+        Cargando = false;
+        StateHasChanged();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrWhiteSpace(busquedaHuesped))
+        {
+            var busq = busquedaHuesped.Trim().ToLower();
+            lstHuespedesFiltrados = lstHuespedes.Where(h =>
+                (h.Nombre != null && h.Nombre.ToLower().Contains(busq)) ||
+                (h.Apellido != null && h.Apellido.ToLower().Contains(busq))
+            ).ToList();
+        }
+        else
+        {
+            lstHuespedesFiltrados = lstHuespedes;
+        }
+    }
+
+    private void OnHuespedSeleccionado(decimal? id)
+    {
+        huespedSeleccionadoId = id;
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private bool PuedeCrearHuesped()
+    {
+        return !string.IsNullOrWhiteSpace(nuevoHuesped.Nombre) &&
+               !string.IsNullOrWhiteSpace(nuevoHuesped.Apellido) &&
+               fechaInSeleccionada.HasValue;
+    }
+
+    private async Task CrearYSeleccionar()
+    {
+        try
+        {
+            nuevoHuesped.FechaIn = fechaInSeleccionada!.Value;
+            nuevoHuesped.FechaOut = fechaOutSeleccionada;
+            nuevoHuesped.DiasAlojados = Math.Max(0, (int)(fechaOutSeleccionada.HasValue
+                ? (fechaOutSeleccionada.Value - fechaInSeleccionada.Value).TotalDays
+                : 0));
+            nuevoHuesped.ID_Idioma = 1;
+            nuevoHuesped.ID_Pais = 1;
+
+            Context.Huespedes.Add(nuevoHuesped);
+            await Context.SaveChangesAsync();
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Huésped creado correctamente.", Severity.Success);
+
+            huespedSeleccionadoId = nuevoHuesped.ID_Huesped;
+            await CargarHuespedes();
+            nuevoHuesped = new();
+            fechaInSeleccionada = DateTime.Today;
+            fechaOutSeleccionada = null;
+        }
+        catch (Exception ex)
+        {
+            var inner = ex.InnerException?.Message ?? ex.Message;
+            Snackbar.Add($"Error al crear huésped: {inner}", Severity.Error);
+        }
+    }
+
+    private async Task ConfirmarSeleccion()
+    {
+        if (!huespedSeleccionadoId.HasValue) return;
+
+        var huesped = await Context.Huespedes.FindAsync(huespedSeleccionadoId.Value);
+        if (huesped != null)
+        {
+            MudDialog.Close(DialogResult.Ok(huesped));
+        }
+    }
+}

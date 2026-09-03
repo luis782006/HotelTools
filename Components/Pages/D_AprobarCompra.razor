@@ -1,0 +1,33 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body1" Class="mb-4">¿Desea aprobar o rechazar la compra vinculada a esta queja?</MudText>
+        <MudTextField @bind-Value="observaciones" Label="Observaciones" Lines="2"
+                      Variant="Variant.Outlined" Margin="Margin.Dense" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Cancel">Cancelar</MudButton>
+        <MudButton OnClick="@(() => Aprobar(true))" Color="Color.Success" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Check">Aprobar</MudButton>
+        <MudButton OnClick="@(() => Aprobar(false))" Color="Color.Error" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Close">Rechazar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    private string observaciones = "";
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private void Aprobar(bool aprobado)
+    {
+        Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+        Snackbar.Add(aprobado ? "Compra aprobada." : "Compra rechazada.", aprobado ? Severity.Success : Severity.Warning);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}
