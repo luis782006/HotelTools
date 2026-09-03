@@ -24,14 +24,14 @@
                           Breakpoint="Breakpoint.Md" Filter="new Func<QuejaDto,bool>(FilterFunc1)"
                           @bind-SelectedItem="selectedItem" RowsPerPage="25">
                     <ToolBarContent>
-                        <MudGrid Spacing="2" Class="mb-2">
-                            <MudItem xs="12" sm="6" md="3">
+                        <MudGrid Spacing="1" Class="mb-2">
+                            <MudItem xs="12" sm="6" md="2">
                                 <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start"
-                                              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Margin="Margin.Dense" />
+                                              AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small" Margin="Margin.Dense" />
                             </MudItem>
                             <MudItem xs="12" sm="6" md="2">
                                 <MudSelect T="decimal?" @bind-Value="filtroEstado" Label="Estado" Clearable="true"
-                                           Variant="Variant.Outlined" Dense="true">
+                                           Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
                                     @foreach (var est in lstEstados)
                                     {
                                         <MudSelectItem T="decimal?" Value="@est.ID_Estado">@est.NombreEstado</MudSelectItem>
@@ -40,7 +40,7 @@
                             </MudItem>
                             <MudItem xs="12" sm="6" md="2">
                                 <MudSelect T="decimal?" @bind-Value="filtroPrioridad" Label="Prioridad" Clearable="true"
-                                           Variant="Variant.Outlined" Dense="true">
+                                           Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
                                     @foreach (var pri in lstPrioridades)
                                     {
                                         <MudSelectItem T="decimal?" Value="@pri.ID_Prioridad">@(GetNombrePrioridad(pri.NombrePrioridad))</MudSelectItem>
@@ -49,7 +49,7 @@
                             </MudItem>
                             <MudItem xs="12" sm="6" md="2">
                                 <MudSelect T="decimal?" @bind-Value="filtroDepto" Label="Depto Ejecutor" Clearable="true"
-                                           Variant="Variant.Outlined" Dense="true">
+                                           Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
                                     @foreach (var d in lstDeptos)
                                     {
                                         <MudSelectItem T="decimal?" Value="@d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
@@ -58,16 +58,16 @@
                             </MudItem>
                             <MudItem xs="12" sm="6" md="2">
                                 <MudSelect T="decimal?" @bind-Value="filtroHabitacion" Label="Habitación" Clearable="true"
-                                           Variant="Variant.Outlined" Dense="true">
+                                           Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
                                     @foreach (var h in lstHabitaciones)
                                     {
                                         <MudSelectItem T="decimal?" Value="@h.ID_NroHab">@h.DescripcionHab</MudSelectItem>
                                     }
                                 </MudSelect>
                             </MudItem>
-                            <MudItem xs="12" sm="6" md="1" Class="d-flex align-center justify-center">
-                                <MudFab Color="Color.Success" StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
-                                        OnClick="() => CrearQueja()" />
+                            <MudItem xs="12" sm="6" md="2">
+                                <MudDateRangePicker @bind-DateRange="filtroFechas" Label="Rango Fechas" Clearable="true"
+                                                    Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" />
                             </MudItem>
                         </MudGrid>
                     </ToolBarContent>
