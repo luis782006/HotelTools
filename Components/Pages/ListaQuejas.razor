@@ -20,11 +20,16 @@
             }
             else
             {
+                <MudStack Row="true" Justify="Justify.FlexEnd" Class="mb-2">
+                    <MudFab Color="Color.Success" StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                            Label="Nueva Queja" OnClick="() => CrearQueja()" />
+                </MudStack>
+
                 <MudTable Items="@lstQuejas" Dense="true" Hover="true" Striped="true" FixedHeader="true"
                           Breakpoint="Breakpoint.Md" Filter="new Func<QuejaDto,bool>(FilterFunc1)"
                           @bind-SelectedItem="selectedItem" RowsPerPage="25">
                     <ToolBarContent>
-                        <MudGrid Spacing="1" Class="mb-2">
+                        <MudGrid Spacing="1">
                             <MudItem xs="12" sm="6" md="2">
                                 <MudTextField @bind-Value="searchString" Placeholder="Buscar" Adornment="Adornment.Start"
                                               AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Small" Margin="Margin.Dense" />
