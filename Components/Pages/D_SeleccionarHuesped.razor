@@ -9,7 +9,8 @@
             <MudItem xs="12" md="10">
                 <MudTextField @bind-Value="busquedaHuesped" Placeholder="Nombre, apellido..."
                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                              IconSize="Size.Medium" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                              IconSize="Size.Medium" Variant="Variant.Outlined" Margin="Margin.Dense"
+                              TextChanged="OnBuscarChanged" />
             </MudItem>
             <MudItem xs="12" md="2" Class="d-flex align-center justify-center">
                 <MudButton Variant="Variant.Filled" Color="Color.Info" FullWidth="true"
@@ -86,12 +87,19 @@
     {
         Cargando = true;
         lstHuespedes = await Context.Huespedes.AsNoTracking().ToListAsync();
-        lstHuespedesFiltrados = lstHuespedes;
+        Filtrar();
         Cargando = false;
         StateHasChanged();
     }
 
-    protected override void OnParametersSet()
+    private void OnBuscarChanged(string valor)
+    {
+        busquedaHuesped = valor;
+        Filtrar();
+        StateHasChanged();
+    }
+
+    private void Filtrar()
     {
         if (!string.IsNullOrWhiteSpace(busquedaHuesped))
         {
@@ -103,7 +111,7 @@
         }
         else
         {
-            lstHuespedesFiltrados = lstHuespedes;
+            lstHuespedesFiltrados = lstHuespedes.ToList();
         }
     }
 
