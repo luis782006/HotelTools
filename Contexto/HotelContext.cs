@@ -311,6 +311,20 @@ namespace HotelTools.Models
                 entity.Property(e => e.FechaAdjunto).HasDefaultValueSql("GETDATE()");
                 entity.ToTable("QuejaImagen", "Quejas");
             });
+
+            modelBuilder.Entity<Pais>(entity =>
+            {
+                entity.HasKey(e => e.ID_PaisOrigen);
+                entity.Property(e => e.ID_PaisOrigen).ValueGeneratedOnAdd();
+                entity.ToTable("Pais", "General");
+            });
+
+            modelBuilder.Entity<Idioma>(entity =>
+            {
+                entity.HasKey(e => e.ID_Idioma);
+                entity.Property(e => e.ID_Idioma).ValueGeneratedOnAdd();
+                entity.ToTable("Idioma", "General");
+            });
         }
     }
 }
