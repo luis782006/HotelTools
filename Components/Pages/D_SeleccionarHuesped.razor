@@ -27,32 +27,33 @@
                 }
                 else
                 {
-                    <MudTable Items="@lstHuespedesFiltrados" Dense="true" Hover="true" Striped="true"
-                              Breakpoint="Breakpoint.Md" Height="350px" FixedHeader="true" RowsPerPage="10">
-                        <HeaderContent>
-                            <MudTh>Seleccionar</MudTh>
-                            <MudTh>Nombre</MudTh>
-                            <MudTh>Apellido</MudTh>
-                            <MudTh>Ingreso</MudTh>
-                            <MudTh>Salida</MudTh>
-                            <MudTh>Días</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd DataLabel="Seleccionar">
-                                <MudRadio T="decimal?" Value="@context.ID_Huesped" SelectedValue="@huespedSeleccionadoId"
-                                          SelectedValueChanged="OnHuespedSeleccionado" Color="Color.Success" />
-                            </MudTd>
-                            <MudTd DataLabel="Nombre">@context.Nombre?.Trim()</MudTd>
-                            <MudTd DataLabel="Apellido">@context.Apellido?.Trim()</MudTd>
-                            <MudTd DataLabel="Ingreso">@context.FechaIn.ToString("dd/MM/yyyy")</MudTd>
-                            <MudTd DataLabel="Salida">@(context.FechaOut?.ToString("dd/MM/yyyy") ?? "-")</MudTd>
-                            <MudTd DataLabel="Días">@context.DiasAlojados</MudTd>
-                        </RowTemplate>
-                        <PagerContent>
-                            <MudTablePager RowsPerPageString="Filas por página."
-                                           InfoFormat="Filas {first_item}-{last_item} de {all_items}" />
-                        </PagerContent>
-                    </MudTable>
+                    <MudRadioGroup T="decimal?" @bind-SelectedValue="huespedSeleccionadoId">
+                        <MudTable Items="@lstHuespedesFiltrados" Dense="true" Hover="true" Striped="true"
+                                  Breakpoint="Breakpoint.Md" Height="350px" FixedHeader="true" RowsPerPage="10">
+                            <HeaderContent>
+                                <MudTh>Seleccionar</MudTh>
+                                <MudTh>Nombre</MudTh>
+                                <MudTh>Apellido</MudTh>
+                                <MudTh>Ingreso</MudTh>
+                                <MudTh>Salida</MudTh>
+                                <MudTh>Días</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Seleccionar">
+                                    <MudRadio T="decimal?" Value="@context.ID_Huesped" Color="Color.Success" />
+                                </MudTd>
+                                <MudTd DataLabel="Nombre">@context.Nombre?.Trim()</MudTd>
+                                <MudTd DataLabel="Apellido">@context.Apellido?.Trim()</MudTd>
+                                <MudTd DataLabel="Ingreso">@context.FechaIn.ToString("dd/MM/yyyy")</MudTd>
+                                <MudTd DataLabel="Salida">@(context.FechaOut?.ToString("dd/MM/yyyy") ?? "-")</MudTd>
+                                <MudTd DataLabel="Días">@context.DiasAlojados</MudTd>
+                            </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager RowsPerPageString="Filas por página."
+                                               InfoFormat="Filas {first_item}-{last_item} de {all_items}" />
+                            </PagerContent>
+                        </MudTable>
+                    </MudRadioGroup>
                 }
             </MudItem>
         </MudGrid>
@@ -113,11 +114,6 @@
         {
             lstHuespedesFiltrados = lstHuespedes.ToList();
         }
-    }
-
-    private void OnHuespedSeleccionado(decimal? id)
-    {
-        huespedSeleccionadoId = id;
     }
 
     private void Cancelar() => MudDialog.Cancel();
