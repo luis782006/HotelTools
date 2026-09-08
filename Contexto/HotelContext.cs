@@ -49,6 +49,8 @@ namespace HotelTools.Models
         public virtual DbSet<PrioridadQueja> PrioridadesQueja { get; set; }
         public virtual DbSet<ImagenQueja> ImagenesQueja { get; set; }
         public virtual DbSet<QuejaImagen> QuejasImagenes { get; set; }
+        public virtual DbSet<Idioma> Idiomas { get; set; }
+        public virtual DbSet<Pais> Paises { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,0 +1,130 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="entity.Nombre" Label="Nombre" Required="true"
+                                  RequiredError="El nombre es obligatorio."
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="entity.Apellido" Label="Apellido" Required="true"
+                                  RequiredError="El apellido es obligatorio."
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="decimal" @bind-Value="entity.ID_Idioma" Label="Idioma" Required="true"
+                               RequiredError="Debe seleccionar un idioma."
+                               Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                        @foreach (var i in lstIdiomas)
+                        {
+                            <MudSelectItem Value="@i.ID_Idioma">@i.NombreIdioma</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="decimal" @bind-Value="entity.ID_Pais" Label="País" Required="true"
+                               RequiredError="Debe seleccionar un país."
+                               Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
+                        <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
+                        @foreach (var p in lstPaises)
+                        {
+                            <MudSelectItem Value="@p.ID_PaisOrigen">@p.NombrePais</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDateRangePicker @bind-DateRange="rangoFechas" Label="Estadía del Huésped"
+                                        Variant="Variant.Outlined" Margin="Margin.Dense"
+                                        MinDate="DateTime.Today" Required="true"
+                                        RequiredError="Debe seleccionar el rango de fechas." />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Value="@diasAlojados.ToString()" Label="Días Alojados"
+                                  ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Cancel">Cancelar</MudButton>
+        <MudButton OnClick="Guardar" Color="Color.Success" Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Save" Disabled="!success">
+            Guardar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    private bool success = true;
+    private string[] errors = { };
+    private Huesped entity = new();
+    private MudForm? form;
+
+    private DateRange? rangoFechas = new DateRange(DateTime.Today, DateTime.Today.AddDays(1));
+    private int diasAlojados = 1;
+
+    private List<Idioma> lstIdiomas = new();
+    private List<Pais> lstPaises = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        lstIdiomas = await Context.Idiomas.AsNoTracking().OrderBy(i => i.NombreIdioma).ToListAsync();
+        lstPaises = await Context.Paises.AsNoTracking().OrderBy(p => p.NombrePais).ToListAsync();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            form?.Validate();
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (rangoFechas?.Start.HasValue == true && rangoFechas?.End.HasValue == true)
+        {
+            diasAlojados = Math.Max(1, (int)(rangoFechas!.End!.Value - rangoFechas!.Start!.Value).TotalDays);
+        }
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task Guardar()
+    {
+        var confirm = await DialogService.ShowMessageBox("Confirmar", "¿Desea guardar el huésped?",
+            yesText: "Guardar", cancelText: "Cancelar");
+        if (confirm != true) return;
+
+        try
+        {
+            entity.FechaIn = rangoFechas!.Start!.Value;
+            entity.FechaOut = rangoFechas!.End!.Value;
+            entity.DiasAlojados = diasAlojados;
+
+            Context.Huespedes.Add(entity);
+            await Context.SaveChangesAsync();
+
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopRight;
+            Snackbar.Add("Huésped creado correctamente.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(entity));
+        }
+        catch (Exception ex)
+        {
+            var inner = ex.InnerException?.Message ?? ex.Message;
+            Snackbar.Add($"Error: {inner}", Severity.Error);
+        }
+    }
+
+    [Inject] private IDialogService DialogService { get; set; }
+}
