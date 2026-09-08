@@ -1,0 +1,105 @@
+@using Microsoft.EntityFrameworkCore
+@inject HotelContext Context
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+            <MudTextField @bind-Value="entity.NombreIdioma" Label="Nombre del Idioma" Required="true"
+                          RequiredError="El nombre es obligatorio."
+                          ReadOnly="@SoloLectura" Margin="Margin.Dense" Variant="Variant.Outlined" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
+                   StartIcon="@Icons.Material.Filled.Cancel">
+            @(Modo == "Ver" ? "Cerrar" : "Cancelar")
+        </MudButton>
+        @if (Modo == "Eliminar")
+        {
+            <MudButton OnClick="Eliminar" Color="Color.Error" Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Delete">Eliminar</MudButton>
+        }
+        @if (Modo != "Ver" && Modo != "Eliminar")
+        {
+            <MudButton OnClick="Guardar" Color="Color.Success" Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Save" Disabled="!success">Guardar</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public string Modo { get; set; } = "Ver";
+    [Parameter] public decimal ID { get; set; }
+
+    private bool SoloLectura;
+    private bool success = true;
+    private string[] errors = { };
+    private Idioma entity = new();
+    private MudForm? form;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SoloLectura = Modo == "Ver" || Modo == "Eliminar";
+        if (ID > 0)
+        {
+            var item = await Context.Idiomas.FindAsync(ID);
+            if (item != null) entity = item;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Modo != "Ver" && Modo != "Eliminar")
+        {
+            form?.Validate();
+            StateHasChanged();
+        }
+    }
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task Guardar()
+    {
+        var confirm = await DialogService.ShowMessageBox("Confirmar", "¿Desea guardar los cambios?",
+            yesText: "Guardar", cancelText: "Cancelar");
+        if (confirm != true) return;
+
+        try
+        {
+            if (Modo == "Insertar")
+                Context.Idiomas.Add(entity);
+            else
+                Context.Idiomas.Update(entity);
+
+            await Context.SaveChangesAsync();
+            Snackbar.Add("Idioma guardado correctamente.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.InnerException?.Message ?? ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task Eliminar()
+    {
+        var confirm = await DialogService.ShowMessageBox("Confirmar", "¿Desea eliminar este idioma?",
+            yesText: "Eliminar", cancelText: "Cancelar");
+        if (confirm != true) return;
+
+        try
+        {
+            Context.Idiomas.Remove(entity);
+            await Context.SaveChangesAsync();
+            Snackbar.Add("Idioma eliminado correctamente.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.InnerException?.Message ?? ex.Message}", Severity.Error);
+        }
+    }
+}
