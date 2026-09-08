@@ -10,67 +10,10 @@
 <MudTabs @bind-ActivePanelIndex="tabIndex" Elevation="0" Rounded="true" Border="true">
     <MudTabPanel Text="Carga Individual" Icon="@Icons.Material.Filled.PersonAdd">
         <MudPaper Class="pa-6 mt-4">
-            <MudForm @ref="formIndividual" @bind-IsValid="@formValido" @bind-Errors="@errorsIndividual">
-                <MudGrid>
-                    <MudItem xs="12" sm="6">
-                        <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
-                            @bind-Value="nuevoUsuario.Nombre" Label="Nombre" Required="true"
-                            RequiredError="El nombre es requerido" />
-                        <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
-                            @bind-Value="nuevoUsuario.Apellido" Label="Apellido" Required="true"
-                            RequiredError="El apellido es requerido" />
-                        <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="nuevoUsuario.ID_Cargo"
-                            Variant="Variant.Outlined" Label="Cargo" Required="true"
-                            RequiredError="Debe seleccionar un cargo">
-                            <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
-                            @foreach (var c in cargos)
-                            {
-                                <MudSelectItem Value="c.ID_Cargo">@c.NombreCargo</MudSelectItem>
-                            }
-                        </MudSelect>
-                        <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="nuevoUsuario.ID_Rol"
-                            Variant="Variant.Outlined" Label="Rol" Required="true"
-                            RequiredError="Debe seleccionar un rol">
-                            <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
-                            @foreach (var r in roles)
-                            {
-                                <MudSelectItem Value="r.ID_Rol">@r.NombreRol</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
-                            @bind-Value="nuevoUsuario.NroContacto" Label="Nro Contacto" />
-                        <MudSelect Margin="Margin.Dense" T="decimal" @bind-Value="nuevoUsuario.ID_Departamento"
-                            Variant="Variant.Outlined" Label="Departamento" Required="true"
-                            RequiredError="Debe seleccionar un departamento">
-                            <MudSelectItem Value="0m">-- Seleccione --</MudSelectItem>
-                            @foreach (var d in departamentos)
-                            {
-                                <MudSelectItem Value="d.ID_Departamento">@d.NombreDepartamento</MudSelectItem>
-                            }
-                        </MudSelect>
-                        <MudCheckBox Margin="Margin.Dense" T="bool" @bind-Checked="esActivo" Label="Activo" />
-                        <MudTextField Margin="Margin.Dense" Variant="Variant.Outlined" T="string"
-                            Label="Contraseña" @bind-Value="passwordGenerado"
-                            InputType="@passwordInput" Adornment="Adornment.End"
-                            AdornmentIcon="@passwordInputIcon" OnAdornmentClick="TogglePasswordVisibilidad" />
-                        <MudButton @onclick="GenerarPassword" Variant="Variant.Outlined"
-                            Color="Color.Info" Size="Size.Small" Class="mt-1">
-                            Generar Contraseña
-                        </MudButton>
-                    </MudItem>
-                </MudGrid>
-                <MudButton OnClick="ConfirmarGuardarIndividual" Variant="Variant.Filled"
-                    Color="Color.Primary" Class="mt-4"
-                    Disabled="!formValido || guardandoIndividual">
-                    Guardar Usuario
-                </MudButton>
-                <MudAlert Severity="Severity.Success" Class="mt-3" Variant="Variant.Outlined"
-                    Style="@(individualExito ? "" : "display:none")">@mensajeIndividualExito</MudAlert>
-                <MudAlert Severity="Severity.Error" Class="mt-3" Variant="Variant.Outlined"
-                    Style="@(individualError ? "" : "display:none")">@mensajeIndividualError</MudAlert>
-            </MudForm>
+            <MudButton OnClick="AbrirCrearUsuario" Variant="Variant.Filled" Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.Add" Size="Size.Large">
+                Nuevo Usuario
+            </MudButton>
         </MudPaper>
     </MudTabPanel>
     <MudTabPanel Text="Carga Masiva (Excel)" Icon="@Icons.Material.Filled.UploadFile">
@@ -138,97 +81,26 @@
 
 @code {
     private int tabIndex;
-    private bool guardandoIndividual, importando, individualExito, individualError, masivoExito, masivoError;
-    private string passwordGenerado, mensajeIndividualExito, mensajeIndividualError, mensajeMasivoExito, mensajeMasivoError, nombreArchivo;
+    private bool importando, masivoExito, masivoError;
+    private string passwordGenerado, mensajeMasivoExito, mensajeMasivoError, nombreArchivo;
     private bool formValido, esActivo = true;
     private string[] errorsIndividual = { };
-    private bool passVisible;
-    private string passwordInputIcon = Icons.Material.Filled.VisibilityOff;
-    private InputType passwordInput = InputType.Password;
 
-    private Empleado nuevoUsuario = new();
-    private List<Cargo> cargos = new();
-    private List<Departamento> departamentos = new();
-    private List<Rol> roles = new();
     private List<UsuarioImportRow> filrosImport = new();
-
-    private MudForm? formIndividual;
-
-    protected override async Task OnInitializedAsync()
-    {
-        cargos = await Context.Cargo.AsNoTracking().ToListAsync();
-        departamentos = await Context.Departamentos.AsNoTracking().ToListAsync();
-        roles = await Context.Rol.AsNoTracking().ToListAsync();
-
-        nuevoUsuario.Activo = 1;
-        GenerarPassword();
-    }
 
     [Inject] private HotelContext Context { get; set; }
     [Inject] private IConfiguration Configuration { get; set; }
     [Inject] private IJSRuntime Js { get; set; }
     [Inject] private IDialogService DialogService { get; set; }
 
-    private void GenerarPassword()
+    private async Task AbrirCrearUsuario()
     {
-        var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
-        var random = new Random();
-        passwordGenerado = new string(Enumerable.Range(0, 10).Select(_ => chars[random.Next(chars.Length)]).ToArray());
-    }
-
-    private void TogglePasswordVisibilidad()
-    {
-        passVisible = !passVisible;
-        passwordInputIcon = passVisible ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
-        passwordInput = passVisible ? InputType.Text : InputType.Password;
-    }
-
-    private async Task ConfirmarGuardarIndividual()
-    {
-        var confirm = await DialogService.ShowMessageBox(
-            "Confirmar",
-            "¿Desea guardar el nuevo usuario?",
-            yesText: "Guardar",
-            cancelText: "Cancelar");
-
-        if (confirm == true)
+        var dialog = await DialogService.ShowAsync<D_Usuario>("NUEVO USUARIO",
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
         {
-            await GuardarUsuarioIndividual();
-        }
-    }
-
-    private async Task GuardarUsuarioIndividual()
-    {
-        guardandoIndividual = true;
-        individualExito = false;
-        individualError = false;
-
-        try
-        {
-            nuevoUsuario.Activo = esActivo ? (byte)1 : (byte)0;
-            nuevoUsuario.Password = PasswordHasher.HashPassword(passwordGenerado, Configuration);
-            nuevoUsuario.FechaDesde = DateTime.Now;
-            nuevoUsuario.FechaHasta = DateTime.MaxValue;
-
-            Context.Empleados.Add(nuevoUsuario);
-            await Context.SaveChangesAsync();
-
-            mensajeIndividualExito = $"Usuario {nuevoUsuario.Nombre} {nuevoUsuario.Apellido} registrado correctamente. Contraseña: {passwordGenerado}";
-            individualExito = true;
-
-            nuevoUsuario = new Empleado { Activo = 1 };
-            esActivo = true;
-            GenerarPassword();
             StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            mensajeIndividualError = $"Error al guardar: {ex.Message}";
-            individualError = true;
-        }
-        finally
-        {
-            guardandoIndividual = false;
         }
     }
 
@@ -267,6 +139,10 @@
             return;
         }
 
+        var cargos = await Context.Cargo.AsNoTracking().ToListAsync();
+        var departamentos = await Context.Departamentos.AsNoTracking().ToListAsync();
+        var roles = await Context.Rol.AsNoTracking().ToListAsync();
+
         for (int row = 2; row <= rowCount; row++)
         {
             var importRow = new UsuarioImportRow
@@ -304,6 +180,10 @@
 
         try
         {
+            var cargos = await Context.Cargo.AsNoTracking().ToListAsync();
+            var departamentos = await Context.Departamentos.AsNoTracking().ToListAsync();
+            var roles = await Context.Rol.AsNoTracking().ToListAsync();
+
             var validos = filrosImport.Where(r => r.Valido).ToList();
             int insertados = 0;
             var errores = new List<string>();

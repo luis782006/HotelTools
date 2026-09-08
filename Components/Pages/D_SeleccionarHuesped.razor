@@ -59,17 +59,22 @@
                 <MudTextField @bind-Value="nuevoHuesped.Apellido" Label="Apellido" Required="true"
                               Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
-            <MudItem xs="12" md="4">
-                <MudDatePicker @bind-Date="fechaInSeleccionada" Label="Fecha Ingreso" Required="true"
-                               Variant="Variant.Outlined" Margin="Margin.Dense" />
+            <MudItem xs="12" md="12">
+                <MudDateRangePicker @bind-DateRange="rangoFechas" Label="Estadía del Huésped"
+                                    Variant="Variant.Outlined" Margin="Margin.Dense"
+                                    MinDate="DateTime.Today" />
             </MudItem>
             <MudItem xs="12" md="4">
-                <MudNumericField @bind-Value="nuevoHuesped.DiasAlojados" Label="Días Alojados" Min="0"
-                                 Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudTextField Value="@(rangoFechas?.Start?.ToString("dd/MM/yyyy") ?? "")" Label="Fecha Ingreso"
+                              ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
             <MudItem xs="12" md="4">
-                <MudDatePicker @bind-Date="fechaOutSeleccionada" Label="Fecha Salida (opcional)"
-                               Variant="Variant.Outlined" Margin="Margin.Dense" />
+                <MudTextField Value="@(rangoFechas?.End?.ToString("dd/MM/yyyy") ?? "")" Label="Fecha Salida"
+                              ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField Value="@diasAlojados.ToString()" Label="Días Alojados"
+                              ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
             </MudItem>
         </MudGrid>
     </DialogContent>
@@ -97,8 +102,8 @@
     private List<Huesped> lstHuespedesFiltrados = new();
     private decimal? huespedSeleccionadoId;
     private Huesped nuevoHuesped = new();
-    private DateTime? fechaInSeleccionada = DateTime.Today;
-    private DateTime? fechaOutSeleccionada;
+    private DateRange? rangoFechas = new DateRange(DateTime.Today, DateTime.Today.AddDays(1));
+    private int diasAlojados = 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,6 +122,11 @@
 
     protected override void OnParametersSet()
     {
+        if (rangoFechas?.Start.HasValue == true && rangoFechas?.End.HasValue == true)
+        {
+            diasAlojados = Math.Max(1, (int)(rangoFechas!.End!.Value - rangoFechas!.Start!.Value).TotalDays);
+        }
+
         if (!string.IsNullOrWhiteSpace(busquedaHuesped))
         {
             var busq = busquedaHuesped.Trim().ToLower();
@@ -142,18 +152,17 @@
     {
         return !string.IsNullOrWhiteSpace(nuevoHuesped.Nombre) &&
                !string.IsNullOrWhiteSpace(nuevoHuesped.Apellido) &&
-               fechaInSeleccionada.HasValue;
+               rangoFechas?.Start.HasValue == true &&
+               rangoFechas?.End.HasValue == true;
     }
 
     private async Task CrearYSeleccionar()
     {
         try
         {
-            nuevoHuesped.FechaIn = fechaInSeleccionada!.Value;
-            nuevoHuesped.FechaOut = fechaOutSeleccionada;
-            nuevoHuesped.DiasAlojados = Math.Max(0, (int)(fechaOutSeleccionada.HasValue
-                ? (fechaOutSeleccionada.Value - fechaInSeleccionada.Value).TotalDays
-                : 0));
+            nuevoHuesped.FechaIn = rangoFechas!.Start!.Value;
+            nuevoHuesped.FechaOut = rangoFechas!.End!.Value;
+            nuevoHuesped.DiasAlojados = diasAlojados;
             nuevoHuesped.ID_Idioma = 1;
             nuevoHuesped.ID_Pais = 1;
 
@@ -165,8 +174,8 @@
             huespedSeleccionadoId = nuevoHuesped.ID_Huesped;
             await CargarHuespedes();
             nuevoHuesped = new();
-            fechaInSeleccionada = DateTime.Today;
-            fechaOutSeleccionada = null;
+            rangoFechas = new DateRange(DateTime.Today, DateTime.Today.AddDays(1));
+            diasAlojados = 1;
         }
         catch (Exception ex)
         {
