@@ -39,7 +39,8 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudDateRangePicker @bind-DateRange="rangoFechas" Label="Estadía del Huésped"
+                    <MudDateRangePicker DateRange="rangoFechas" DateRangeChanged="OnDateRangeChanged"
+                                        Label="Estadía del Huésped"
                                         Variant="Variant.Outlined" Margin="Margin.Dense"
                                         MinDate="DateTime.Today" Required="true"
                                         RequiredError="Debe seleccionar el rango de fechas." />
@@ -90,12 +91,14 @@
         }
     }
 
-    protected override void OnParametersSet()
+    private void OnDateRangeChanged(DateRange range)
     {
-        if (rangoFechas?.Start.HasValue == true && rangoFechas?.End.HasValue == true)
+        rangoFechas = range;
+        if (range?.Start.HasValue == true && range?.End.HasValue == true)
         {
-            diasAlojados = Math.Max(1, (int)(rangoFechas!.End!.Value - rangoFechas!.Start!.Value).TotalDays);
+            diasAlojados = Math.Max(1, (int)(range.End.Value - range.Start.Value).TotalDays);
         }
+        StateHasChanged();
     }
 
     private void Cancelar() => MudDialog.Cancel();
