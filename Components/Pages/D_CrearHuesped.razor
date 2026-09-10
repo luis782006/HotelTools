@@ -17,6 +17,17 @@
                                   Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
+                    <MudSelect T="decimal?" @bind-Value="entity.ID_NroHab" Label="Habitación" Required="true"
+                               RequiredError="Debe seleccionar una habitación."
+                               Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
+                        <MudSelectItem Value="@((decimal?)null)">-- Seleccione --</MudSelectItem>
+                        @foreach (var h in lstHabitaciones)
+                        {
+                            <MudSelectItem T="decimal?" Value="@h.ID_NroHab">@h.DescripcionHab</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
                     <MudSelect T="decimal" @bind-Value="entity.ID_Idioma" Label="Idioma" Required="true"
                                RequiredError="Debe seleccionar un idioma."
                                Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense">
@@ -75,11 +86,13 @@
 
     private List<Idioma> lstIdiomas = new();
     private List<Pais> lstPaises = new();
+    private List<Habitacion> lstHabitaciones = new();
 
     protected override async Task OnInitializedAsync()
     {
         lstIdiomas = await Context.Idiomas.AsNoTracking().OrderBy(i => i.NombreIdioma).ToListAsync();
         lstPaises = await Context.Paises.AsNoTracking().OrderBy(p => p.NombrePais).ToListAsync();
+        lstHabitaciones = await Context.Habitaciones.AsNoTracking().Where(h => h.Estado).OrderBy(h => h.DescripcionHab).ToListAsync();
     }
 
     protected override void OnAfterRender(bool firstRender)

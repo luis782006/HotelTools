@@ -182,6 +182,7 @@
         if (result != null && !result.Canceled && result.Data is Huesped huesped)
         {
             entity.ID_Huesped = huesped.ID_Huesped;
+            entity.ID_Habitaciones = huesped.ID_NroHab ?? 0;
             huespedNombreSeleccionado = $"{huesped.Nombre?.Trim()} {huesped.Apellido?.Trim()}";
             StateHasChanged();
         }
