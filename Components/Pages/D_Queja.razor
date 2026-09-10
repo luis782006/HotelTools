@@ -181,8 +181,13 @@
         var result = await dialog.Result;
         if (result != null && !result.Canceled && result.Data is Huesped huesped)
         {
+            if (!huesped.ID_NroHab.HasValue || huesped.ID_NroHab == 0)
+            {
+                Snackbar.Add("El huésped seleccionado no tiene habitación asignada. Debe asignarle una habitación.", Severity.Warning);
+                return;
+            }
             entity.ID_Huesped = huesped.ID_Huesped;
-            entity.ID_Habitaciones = huesped.ID_NroHab ?? 0;
+            entity.ID_Habitaciones = huesped.ID_NroHab.Value;
             huespedNombreSeleccionado = $"{huesped.Nombre?.Trim()} {huesped.Apellido?.Trim()}";
             StateHasChanged();
         }
