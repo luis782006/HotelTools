@@ -61,10 +61,6 @@
     <DialogActions>
         <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
                    StartIcon="@Icons.Material.Filled.Cancel">Cancelar</MudButton>
-        <MudButton OnClick="ConfirmarSeleccion" Color="Color.Success" Variant="Variant.Filled"
-                   StartIcon="@Icons.Material.Filled.Check" Disabled="@(huespedSeleccionadoId == 0)">
-            Seleccionar
-        </MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -102,10 +98,18 @@
         StateHasChanged();
     }
 
-    private void OnSeleccionChanged(decimal valor)
+    private async Task OnSeleccionChanged(decimal valor)
     {
         huespedSeleccionadoId = valor;
-        StateHasChanged();
+
+        if (valor > 0)
+        {
+            var huesped = lstHuespedes.FirstOrDefault(h => h.ID_Huesped == valor);
+            if (huesped != null)
+            {
+                MudDialog.Close(DialogResult.Ok(huesped));
+            }
+        }
     }
 
     private void Filtrar()
@@ -135,17 +139,6 @@
         {
             huespedSeleccionadoId = huespedCreado.ID_Huesped;
             await CargarHuespedes();
-        }
-    }
-
-    private async Task ConfirmarSeleccion()
-    {
-        if (huespedSeleccionadoId == 0) return;
-
-        var huesped = await Context.Huespedes.FindAsync(huespedSeleccionadoId);
-        if (huesped != null)
-        {
-            MudDialog.Close(DialogResult.Ok(huesped));
         }
     }
 }
