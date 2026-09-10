@@ -267,6 +267,7 @@ namespace HotelTools.Models
                 entity.Property(e => e.Nombre).HasMaxLength(40);
                 entity.Property(e => e.Apellido).HasMaxLength(50);
                 entity.ToTable("Huespedes", "Quejas");
+                entity.Property(entity => entity.ID_NroHab).HasColumnType("decimal(18,0)");
             });
 
             modelBuilder.Entity<CategoriaQueja>(entity =>

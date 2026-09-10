@@ -36,17 +36,32 @@
                             <MudTh>Ingreso</MudTh>
                             <MudTh>Salida</MudTh>
                             <MudTh>Días</MudTh>
+                            <MudTh>Habitación</MudTh>
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd DataLabel="Seleccionar">
-                                <MudRadio T="decimal" Value="@context.ID_Huesped" Color="Color.Success"
-                                           OnClick="@(() => SeleccionarHuesped(context.ID_Huesped))" />
+                                @if (context.ID_Huesped == huespedSeleccionadoId)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.RadioButtonChecked"
+                                                   Color="Color.Success"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => SeleccionarHuesped(context.ID_Huesped))" />
+                                }
+                                else
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.RadioButtonUnchecked"
+                                                   Color="Color.Default"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => SeleccionarHuesped(context.ID_Huesped))" />
+                                }
                             </MudTd>
+
                             <MudTd DataLabel="Nombre">@context.Nombre?.Trim()</MudTd>
                             <MudTd DataLabel="Apellido">@context.Apellido?.Trim()</MudTd>
                             <MudTd DataLabel="Ingreso">@context.FechaIn.ToString("dd/MM/yyyy")</MudTd>
                             <MudTd DataLabel="Salida">@(context.FechaOut?.ToString("dd/MM/yyyy") ?? "-")</MudTd>
                             <MudTd DataLabel="Días">@context.DiasAlojados</MudTd>
+                            <MudTd DataLabel="Habitación">@context.ID_NroHab</MudTd>
                         </RowTemplate>
                         <PagerContent>
                             <MudTablePager RowsPerPageString="Filas por página."

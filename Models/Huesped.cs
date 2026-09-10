@@ -13,6 +13,7 @@ namespace HotelTools.Models
         public DateTime FechaIn { get; set; }
         public DateTime? FechaOut { get; set; }
         public int DiasAlojados { get; set; }
+        public decimal? ID_NroHab { get; set; }
         public decimal ID_Idioma { get; set; }
         public decimal ID_Pais { get; set; }
     }
