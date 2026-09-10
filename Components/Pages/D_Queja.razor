@@ -8,18 +8,25 @@
     <DialogContent>
         <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
             <MudGrid>
-                @if (Modo == "Insertar")
-                {
-                    <MudItem xs="12" md="12">
-                        <MudStack Row="true" AlignItems="AlignItems.Center">
-                            <MudTextField T="string" @bind-Value="huespedNombreSeleccionado" Label="Huésped" ReadOnly="true"
-                                          Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1;" />
-                            <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="AbrirSeleccionarHuesped"
-                                       StartIcon="@Icons.Material.Filled.Search">Seleccionar</MudButton>
-                        </MudStack>
-                        
-                    </MudItem>
-                }
+                 @if (Modo == "Insertar")
+                 {
+                     <MudItem xs="12" md="12">
+                         <MudStack Row="true" AlignItems="AlignItems.Center">
+                             <MudTextField T="string" @bind-Value="huespedNombreSeleccionado" Label="Huésped" ReadOnly="true"
+                                           Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1;" />
+                             <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="AbrirSeleccionarHuesped"
+                                        StartIcon="@Icons.Material.Filled.Search">Seleccionar</MudButton>
+                         </MudStack>
+                     </MudItem>
+                 }
+
+                 @if (Modo == "Insertar" && entity.ID_Habitaciones > 0)
+                 {
+                     <MudItem xs="12" md="6">
+                         <MudTextField T="decimal" @bind-Value="entity.ID_Habitaciones" Label="Habitación" ReadOnly="true"
+                                       Variant="Variant.Outlined" Margin="Margin.Dense" />
+                     </MudItem>
+                 }
 
                 <MudItem xs="12" md="12">
                     <MudTextField @bind-Value="entity.Quejas" Label="Título / Descripción de la Queja" Required="true"
@@ -197,6 +204,12 @@
 
     private async Task Guardar()
     {
+        if (entity.ID_Habitaciones <= 0)
+        {
+            Snackbar.Add("Debe seleccionar un huésped con habitación asignada.", Severity.Warning);
+            return;
+        }
+
         var confirm = await DialogService.ShowMessageBox("Confirmar", "¿Desea guardar los cambios?",
             yesText: "Guardar", cancelText: "Cancelar");
         if (confirm != true) return;
