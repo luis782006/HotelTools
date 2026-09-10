@@ -17,12 +17,7 @@
                             <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="AbrirSeleccionarHuesped"
                                        StartIcon="@Icons.Material.Filled.Search">Seleccionar</MudButton>
                         </MudStack>
-                        @if (entity.ID_Huesped > 0 && !string.IsNullOrEmpty(huespedNombreSeleccionado))
-                        {
-                            <MudText Typo="Typo.body2" Color="Color.Success" Class="mt-1">
-                                Huésped seleccionado: @huespedNombreSeleccionado (ID: @entity.ID_Huesped)
-                            </MudText>
-                        }
+                        
                     </MudItem>
                 }
 
