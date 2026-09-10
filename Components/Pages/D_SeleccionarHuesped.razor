@@ -27,7 +27,7 @@
                 }
                 else
                 {
-                    <MudRadioGroup T="decimal?" @bind-SelectedValue="huespedSeleccionadoId">
+                    <MudRadioGroup T="decimal" SelectedValue="huespedSeleccionadoId" SelectedValueChanged="OnSeleccionChanged">
                         <MudTable Items="@lstHuespedesFiltrados" Dense="true" Hover="true" Striped="true"
                                   Breakpoint="Breakpoint.Md" Height="350px" FixedHeader="true" RowsPerPage="10">
                             <HeaderContent>
@@ -40,7 +40,7 @@
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="Seleccionar">
-                                    <MudRadio T="decimal?" Value="@context.ID_Huesped" Color="Color.Success" />
+                                    <MudRadio T="decimal" Value="@context.ID_Huesped" Color="Color.Success" />
                                 </MudTd>
                                 <MudTd DataLabel="Nombre">@context.Nombre?.Trim()</MudTd>
                                 <MudTd DataLabel="Apellido">@context.Apellido?.Trim()</MudTd>
@@ -62,7 +62,7 @@
         <MudButton OnClick="Cancelar" Color="Color.Error" Variant="Variant.Outlined"
                    StartIcon="@Icons.Material.Filled.Cancel">Cancelar</MudButton>
         <MudButton OnClick="ConfirmarSeleccion" Color="Color.Success" Variant="Variant.Filled"
-                   StartIcon="@Icons.Material.Filled.Check" Disabled="!huespedSeleccionadoId.HasValue">
+                   StartIcon="@Icons.Material.Filled.Check" Disabled="@(huespedSeleccionadoId == 0)">
             Seleccionar
         </MudButton>
     </DialogActions>
@@ -76,11 +76,13 @@
     private string busquedaHuesped = "";
     private List<Huesped> lstHuespedes = new();
     private List<Huesped> lstHuespedesFiltrados = new();
-    private decimal? huespedSeleccionadoId;
+    private decimal huespedSeleccionadoId = 0;
 
     protected override async Task OnInitializedAsync()
     {
-        huespedSeleccionadoId = HuespedIdActual;
+        if (HuespedIdActual.HasValue && HuespedIdActual > 0)
+            huespedSeleccionadoId = HuespedIdActual.Value;
+
         await CargarHuespedes();
     }
 
@@ -97,6 +99,12 @@
     {
         busquedaHuesped = valor;
         Filtrar();
+        StateHasChanged();
+    }
+
+    private void OnSeleccionChanged(decimal valor)
+    {
+        huespedSeleccionadoId = valor;
         StateHasChanged();
     }
 
@@ -132,9 +140,9 @@
 
     private async Task ConfirmarSeleccion()
     {
-        if (!huespedSeleccionadoId.HasValue) return;
+        if (huespedSeleccionadoId == 0) return;
 
-        var huesped = await Context.Huespedes.FindAsync(huespedSeleccionadoId.Value);
+        var huesped = await Context.Huespedes.FindAsync(huespedSeleccionadoId);
         if (huesped != null)
         {
             MudDialog.Close(DialogResult.Ok(huesped));
