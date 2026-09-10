@@ -12,7 +12,7 @@
                 {
                     <MudItem xs="12" md="12">
                         <MudStack Row="true" AlignItems="AlignItems.Center">
-                            <MudTextField @bind-Value="huespedNombreSeleccionado" Label="Huésped" ReadOnly="true"
+                            <MudTextField T="string" @bind-Value="huespedNombreSeleccionado" Label="Huésped" ReadOnly="true"
                                           Variant="Variant.Outlined" Margin="Margin.Dense" Style="flex:1;" />
                             <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="AbrirSeleccionarHuesped"
                                        StartIcon="@Icons.Material.Filled.Search">Seleccionar</MudButton>

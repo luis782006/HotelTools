@@ -107,7 +107,10 @@
             var huesped = lstHuespedes.FirstOrDefault(h => h.ID_Huesped == valor);
             if (huesped != null)
             {
-                MudDialog.Close(DialogResult.Ok(huesped));
+                await InvokeAsync(() =>
+                {
+                    MudDialog.Close(DialogResult.Ok(huesped));
+                });
             }
         }
     }
