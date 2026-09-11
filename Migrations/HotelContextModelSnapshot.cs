@@ -75,6 +75,33 @@ namespace HotelTools.Migrations
                     b.ToTable("CategoriasProductos", "Inventarios");
                 });
 
+            modelBuilder.Entity("HotelTools.Models.CategoriaQueja", b =>
+                {
+                    b.Property<decimal>("ID_CategoriaQueja")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_CategoriaQueja"));
+
+                    b.Property<bool>("Activo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("NombreCategoria")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.HasKey("ID_CategoriaQueja");
+
+                    b.ToTable("CategoriasQueja", "Quejas");
+                });
+
             modelBuilder.Entity("HotelTools.Models.Departamento", b =>
                 {
                     b.Property<decimal>("ID_Departamento")
@@ -140,6 +167,23 @@ namespace HotelTools.Migrations
                     b.ToTable("Empleados", "Empleados");
                 });
 
+            modelBuilder.Entity("HotelTools.Models.EstadoQueja", b =>
+                {
+                    b.Property<decimal>("ID_Estado")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_Estado"));
+
+                    b.Property<string>("NombreEstado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID_Estado");
+
+                    b.ToTable("Estados", "Quejas");
+                });
+
             modelBuilder.Entity("HotelTools.Models.Habitacion", b =>
                 {
                     b.Property<decimal>("ID_NroHab")
@@ -175,8 +219,29 @@ namespace HotelTools.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_HabProductos"));
 
+                    b.Property<bool>("Activo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<int>("Cantidad")
                         .HasColumnType("int");
+
+                    b.Property<bool>("EsNativo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("EsPrestamo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("FechaAsignacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaRetiro")
+                        .HasColumnType("datetime2");
 
                     b.Property<decimal>("ID_HabFK")
                         .HasColumnType("decimal(18,2)");
@@ -184,9 +249,131 @@ namespace HotelTools.Migrations
                     b.Property<decimal>("ID_ProductosFK")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<bool>("PrestadoFuera")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.HasKey("ID_HabProductos");
 
                     b.ToTable("HabitacionProductos", "Inventarios");
+                });
+
+            modelBuilder.Entity("HotelTools.Models.HistorialQueja", b =>
+                {
+                    b.Property<decimal>("ID_Orden")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_Orden"));
+
+                    b.Property<bool>("Aprobado")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<decimal>("ID_Compra")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Empleado")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Estado")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Imagen")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Quejas")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("observaciones")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.HasKey("ID_Orden");
+
+                    b.ToTable("Historial", "Quejas");
+                });
+
+            modelBuilder.Entity("HotelTools.Models.Huesped", b =>
+                {
+                    b.Property<decimal>("ID_Huesped")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_Huesped"));
+
+                    b.Property<string>("Apellido")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("DiasAlojados")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaIn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaOut")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ID_Idioma")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ID_NroHab")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<decimal>("ID_Pais")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("ID_Huesped");
+
+                    b.HasIndex("ID_NroHab");
+
+                    b.ToTable("Huespedes", "Quejas");
+                });
+
+            modelBuilder.Entity("HotelTools.Models.Idioma", b =>
+                {
+                    b.Property<decimal>("ID_Idioma")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_Idioma"));
+
+                    b.Property<string>("NombreIdioma")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID_Idioma");
+
+                    b.ToTable("Idioma", "General");
+                });
+
+            modelBuilder.Entity("HotelTools.Models.ImagenQueja", b =>
+                {
+                    b.Property<decimal>("idImagen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("idImagen"));
+
+                    b.Property<byte[]>("imagen")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("idImagen");
+
+                    b.ToTable("Imagen", "Quejas");
                 });
 
             modelBuilder.Entity("HotelTools.Models.Modelo", b =>
@@ -205,6 +392,23 @@ namespace HotelTools.Migrations
                     b.HasKey("ID_Modelos");
 
                     b.ToTable("Modelos", "Inventarios");
+                });
+
+            modelBuilder.Entity("HotelTools.Models.Pais", b =>
+                {
+                    b.Property<decimal>("ID_PaisOrigen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_PaisOrigen"));
+
+                    b.Property<string>("NombrePais")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID_PaisOrigen");
+
+                    b.ToTable("Pais", "General");
                 });
 
             modelBuilder.Entity("HotelTools.Models.PaqueteProducto", b =>
@@ -277,6 +481,30 @@ namespace HotelTools.Migrations
                     b.ToTable("Permisos", "Empleados");
                 });
 
+            modelBuilder.Entity("HotelTools.Models.PrioridadQueja", b =>
+                {
+                    b.Property<decimal>("ID_Prioridad")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_Prioridad"));
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("NombrePrioridad")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID_Prioridad");
+
+                    b.ToTable("Prioridad", "Quejas");
+                });
+
             modelBuilder.Entity("HotelTools.Models.Producto", b =>
                 {
                     b.Property<decimal>("ID_Productos")
@@ -311,6 +539,9 @@ namespace HotelTools.Migrations
                     b.Property<decimal?>("ID_HabitacionFK")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal?>("ID_HabitacionOrigenFK")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("ID_ModelosFK")
                         .HasColumnType("decimal(18,2)");
 
@@ -321,12 +552,63 @@ namespace HotelTools.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<bool>("Prestado")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("Prestamo")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<decimal?>("ReparadoPor")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("ID_Productos");
 
                     b.ToTable("Productos", "Inventarios");
+                });
+
+            modelBuilder.Entity("HotelTools.Models.ProductosMovimientos", b =>
+                {
+                    b.Property<decimal>("ID_ProductosMovimientos")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_ProductosMovimientos"));
+
+                    b.Property<DateTime>("FechaMov")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ID_Empleado")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_EmpleadoMov")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_HabDestino")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_HabOrigen")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ID_HabitacionCasa")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Productos")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TipoMovimiento")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("ID_ProductosMovimientos");
+
+                    b.ToTable("ProductosMovimientos", "Inventarios");
                 });
 
             modelBuilder.Entity("HotelTools.Models.Proveedor", b =>
@@ -346,6 +628,71 @@ namespace HotelTools.Migrations
                     b.HasKey("ID_Proveedor");
 
                     b.ToTable("Proveedores", "Inventarios");
+                });
+
+            modelBuilder.Entity("HotelTools.Models.Queja", b =>
+                {
+                    b.Property<decimal>("ID_Quejas")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_Quejas"));
+
+                    b.Property<decimal>("ID_DepartamentoEjecuta")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_DepartamentoRecibe")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Empleado")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ID_EmpleadoAsignacion")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ID_Estado")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Habitaciones")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Huesped")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Prioridad")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Quejas")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID_Quejas");
+
+                    b.ToTable("Quejas", "Quejas");
+                });
+
+            modelBuilder.Entity("HotelTools.Models.QuejaImagen", b =>
+                {
+                    b.Property<decimal>("ID_QuejaImagen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<decimal>("ID_QuejaImagen"));
+
+                    b.Property<DateTime>("FechaAdjunto")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<decimal>("ID_Imagen")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ID_Queja")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("ID_QuejaImagen");
+
+                    b.ToTable("QuejaImagen", "Quejas");
                 });
 
             modelBuilder.Entity("HotelTools.Models.RazonSocial", b =>
@@ -513,6 +860,16 @@ namespace HotelTools.Migrations
                     b.HasKey("ID_TipoProducto");
 
                     b.ToTable("TipoProducto", "Inventarios");
+                });
+
+            modelBuilder.Entity("HotelTools.Models.Huesped", b =>
+                {
+                    b.HasOne("HotelTools.Models.Habitacion", "Habitacion")
+                        .WithMany()
+                        .HasForeignKey("ID_NroHab")
+                        .HasConstraintName("FK_Huespedes_Habitaciones");
+
+                    b.Navigation("Habitacion");
                 });
 
             modelBuilder.Entity("HotelTools.Models.PaqueteProductoDetalle", b =>
