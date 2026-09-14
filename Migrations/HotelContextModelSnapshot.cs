@@ -275,24 +275,24 @@ namespace HotelTools.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<decimal>("ID_Compra")
+                     b.Property<decimal?>("ID_Compra")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ID_Empleado")
+                     b.Property<decimal>("ID_Empleado")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ID_Estado")
+                     b.Property<decimal>("ID_Estado")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ID_Imagen")
+                     b.Property<decimal?>("ID_Imagen")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("ID_Quejas")
+                     b.Property<decimal>("ID_Quejas")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("observaciones")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                     b.Property<string>("observaciones")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("ID_Orden");
 

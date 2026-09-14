@@ -130,9 +130,9 @@
                         ID_Quejas = IDQueja,
                         ID_Empleado = 1,
                         ID_Estado = nuevoEstadoId,
-                        observaciones = observaciones?.Length > 10 ? observaciones.Substring(0, 10) : observaciones,
-                        ID_Imagen = 0,
-                        ID_Compra = 0,
+                        observaciones = observaciones?.Length > 100 ? observaciones.Substring(0, 100) : observaciones,
+                        ID_Compra = null,
+                        ID_Imagen = null,
                         Aprobado = false,
                         FechaRegistro = DateTime.Now
                     };

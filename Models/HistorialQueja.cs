@@ -11,9 +11,9 @@ namespace HotelTools.Models
         public decimal ID_Quejas { get; set; }
         public decimal ID_Empleado { get; set; }
         public string? observaciones { get; set; }
-        public decimal ID_Compra { get; set; }
+        public decimal? ID_Compra { get; set; }
         public bool Aprobado { get; set; }
-        public decimal ID_Imagen { get; set; }
+        public decimal? ID_Imagen { get; set; }
         public decimal ID_Estado { get; set; }
         public DateTime FechaRegistro { get; set; }
     }

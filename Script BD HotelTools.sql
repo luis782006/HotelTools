@@ -852,6 +852,8 @@ REFERENCES [Quejas].[Quejas] ([ID_Quejas])
 GO
 ALTER TABLE [Quejas].[Historial] CHECK CONSTRAINT [FK_Historial_Quejas]
 GO
+ALTER TABLE [Quejas].[Historial] ALTER COLUMN [ID_Imagen] [decimal](18, 0) NULL
+ALTER TABLE [Quejas].[Historial] ALTER COLUMN [ID_Compra] [decimal](18, 0) NULL
 ALTER TABLE [Quejas].[Huespedes]  WITH CHECK ADD  CONSTRAINT [FK_Huespedes_Idioma] FOREIGN KEY([ID_Idioma])
 REFERENCES [General].[Idioma] ([ID_Idioma])
 GO

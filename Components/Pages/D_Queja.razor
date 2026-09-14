@@ -3,6 +3,7 @@
 @inject HotelContext Context
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject SeguridadSesion Sesion
 
 <MudDialog>
     <DialogContent>
@@ -155,7 +156,7 @@
         else
         {
             entity.ID_Estado = lstEstados.FirstOrDefault(e => e.NombreEstado == "Nuevo")?.ID_Estado ?? 1;
-            entity.ID_Empleado = 1; // Default, should be set from session
+            entity.ID_Empleado = Sesion.EmpleadoActual?.ID_Empleado ?? 1;
 
             if (HuespedIdInicial.HasValue && HuespedIdInicial > 0)
             {
