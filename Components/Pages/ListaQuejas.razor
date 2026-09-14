@@ -78,7 +78,6 @@
                     </ToolBarContent>
                     <HeaderContent>
                         <MudTh>Acciones</MudTh>
-                        <MudTh>ID</MudTh>
                         <MudTh>Título</MudTh>
                         <MudTh>Huésped</MudTh>
                         <MudTh>Habitación</MudTh>
@@ -93,7 +92,6 @@
                                                Href="@($"/queja/{context.ID_Quejas}")" />
                             </MudTooltip>
                         </MudTd>
-                        <MudTd DataLabel="ID">@context.ID_Quejas</MudTd>
                         <MudTd DataLabel="Título">
                             <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Titulo</MudText>
                         </MudTd>
@@ -139,15 +137,18 @@
     private decimal? filtroHabitacion;
     private DateRange? filtroFechas;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await CargarDatos();
-            Cargando = false;
-            StateHasChanged();
-        }
-    }
+     private bool datosCargados = false;
+
+     protected override async Task OnAfterRenderAsync(bool firstRender)
+     {
+         if (!datosCargados)
+         {
+             await CargarDatos();
+             Cargando = false;
+             datosCargados = true;
+             StateHasChanged();
+         }
+     }
 
     private async Task CargarDatos()
     {

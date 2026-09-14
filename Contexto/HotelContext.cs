@@ -255,7 +255,9 @@ namespace HotelTools.Models
             {
                 entity.HasKey(e => e.ID_Orden);
                 entity.Property(e => e.ID_Orden).ValueGeneratedOnAdd();
-                entity.Property(e => e.observaciones).HasMaxLength(10);
+                entity.Property(e => e.observaciones).HasMaxLength(100);
+                entity.Property(e => e.ID_Imagen);
+                entity.Property(e => e.ID_Compra);
                 entity.Property(e => e.FechaRegistro).HasDefaultValueSql("GETDATE()");
                 entity.ToTable("Historial", "Quejas");
             });

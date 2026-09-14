@@ -1,7 +1,9 @@
 @page "/queja/{IdQueja}"
 @attribute [Authorize(Policy = "ViewQuejas")]
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components
 @using HotelTools.Services
+@inject NavigationManager NavigationManager
 @inject HotelContext Context
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -25,10 +27,13 @@
             <MudItem xs="12" md="8">
                 <MudPaper Elevation="4" Class="pa-4">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
-                        <MudText Typo="Typo.h5">Queja #@queja.ID_Quejas</MudText>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Default" Size="Size.Small" OnClick="VolverALista" />
+                            <MudText Typo="Typo.h5">Queja - Habitación @habitacionInfo</MudText>
+                        </MudStack>
                         <MudChip T="string" Size="Size.Medium" Variant="Variant.Filled"
-                                 Style="@GetEstadoStyle(estadoActual?.NombreEstado ?? "")">
-                            @(estadoActual?.NombreEstado ?? "N/D")
+                                  Style="@GetEstadoStyle(EstadoDisplay())">
+                            @(EstadoDisplay())
                         </MudChip>
                     </MudStack>
 
@@ -155,6 +160,7 @@
     private string deptoEjecutor = "";
     private string? empleadoAsignado;
     private List<EstadoQueja> lstEstados = new();
+    private string habitacionInfo = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -196,12 +202,25 @@
                 historial = await Context.HistorialQuejas
                     .Where(h => h.ID_Quejas == queja.ID_Quejas)
                     .ToListAsync();
+
+                var hab = await Context.Habitaciones.FindAsync(queja.ID_Habitaciones);
+                habitacionInfo = hab != null ? $"{hab.DescripcionHab} ({hab.ID_NroHab})" : "N/D";
             }
         }
     }
 
-    private bool PuedeAsignar() => queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Nuevo")?.ID_Estado
-        || queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Asignado")?.ID_Estado;
+    private void VolverALista() => NavigationManager.NavigateTo("/listaquejas");
+
+    private bool PuedeAsignar() => queja?.ID_EmpleadoAsignacion == null
+        && (queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Nuevo")?.ID_Estado
+            || queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Asignado")?.ID_Estado);
+
+    private string EstadoDisplay()
+    {
+        if (queja?.ID_EmpleadoAsignacion.HasValue == true)
+            return "En Proceso";
+        return estadoActual?.NombreEstado ?? "N/D";
+    }
 
     private bool PuedeCambiarEstado() => queja?.ID_Estado != lstEstados.FirstOrDefault(e => e.NombreEstado == "Cerrado")?.ID_Estado
         && queja?.ID_Estado != lstEstados.FirstOrDefault(e => e.NombreEstado == "Rechazado")?.ID_Estado;
