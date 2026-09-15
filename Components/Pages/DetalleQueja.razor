@@ -119,20 +119,38 @@
 
             <MudItem xs="12">
                 <MudPaper Elevation="4" Class="pa-4">
-                    <MudText Typo="Typo.h6" Class="mb-4">Historial de Cambios</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                        <MudText Typo="Typo.h6">Historial de Cambios</MudText>
+                        @if (historial.Any())
+                        {
+                            <MudTooltip Text="@(ordenAscendente ? "Ordenar descendente" : "Ordenar ascendente")">
+                                <MudIconButton Icon="@Icons.Material.Filled.SwapVert" Size="Size.Small"
+                                               OnClick="ToggleOrdenHistorial" Color="Color.Default" />
+                            </MudTooltip>
+                        }
+                    </MudStack>
                     @if (historial.Any())
                     {
                         <MudTimeline>
-                            @foreach (var h in historial.OrderByDescending(h => h.FechaRegistro))
+                            @foreach (var h in ordenAscendente
+                                ? historial.OrderBy(h => h.FechaRegistro)
+                                : historial.OrderByDescending(h => h.FechaRegistro))
                             {
                                 <MudTimelineItem>
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                        @h.FechaRegistro.ToString("dd/MM/yyyy HH:mm") - @GetNombreEstado(h.ID_Estado)
-                                    </MudText>
-                                    @if (!string.IsNullOrWhiteSpace(h.observaciones))
-                                    {
-                                        <MudText Typo="Typo.body1">@h.observaciones</MudText>
-                                    }
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.body2" Color="Color.Primary">
+                                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1" />@GetEmpleadoNombre(h.ID_Empleado)
+                                        </MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Class="mr-1" />@h.FechaRegistro.ToString("dd/MM/yyyy HH:mm") - @GetNombreEstado(h.ID_Estado)
+                                        </MudText>
+                                        @if (!string.IsNullOrWhiteSpace(h.observaciones))
+                                        {
+                                            <MudText Typo="Typo.body1">
+                                                <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Class="mr-1" />@h.observaciones
+                                            </MudText>
+                                        }
+                                    </MudStack>
                                 </MudTimelineItem>
                             }
                         </MudTimeline>
@@ -153,6 +171,8 @@
     private bool Cargando = true;
     private Queja? queja;
     private List<HistorialQueja> historial = new();
+    private Dictionary<decimal, string> empleadosHistorial = new();
+    private bool ordenAscendente = false;
     private EstadoQueja? estadoActual;
     private PrioridadQueja? prioridadActual;
     private string huespedNombre = "";
@@ -203,6 +223,14 @@
                     .Where(h => h.ID_Quejas == queja.ID_Quejas)
                     .ToListAsync();
 
+                var empleadoIds = historial.Select(h => h.ID_Empleado).Distinct().ToList();
+                var empleados = await Context.Empleados
+                    .Where(e => empleadoIds.Contains(e.ID_Empleado))
+                    .ToListAsync();
+                empleadosHistorial = empleados.ToDictionary(
+                    e => e.ID_Empleado,
+                    e => $"{e.Nombre?.Trim()} {e.Apellido?.Trim()}");
+
                 var hab = await Context.Habitaciones.FindAsync(queja.ID_Habitaciones);
                 habitacionInfo = hab != null ? $"{hab.DescripcionHab} ({hab.ID_NroHab})" : "N/D";
             }
@@ -222,14 +250,14 @@
         return estadoActual?.NombreEstado ?? "N/D";
     }
 
-    private bool PuedeCambiarEstado() => queja?.ID_Estado != lstEstados.FirstOrDefault(e => e.NombreEstado == "Cerrado")?.ID_Estado
+    private bool PuedeCambiarEstado() => queja?.ID_Estado != lstEstados.FirstOrDefault(e => e.NombreEstado == "Resuelto")?.ID_Estado
         && queja?.ID_Estado != lstEstados.FirstOrDefault(e => e.NombreEstado == "Rechazado")?.ID_Estado;
 
-    private bool PuedeAprobarCompra() => queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Pendiente Aprobación")?.ID_Estado;
+    private bool PuedeAprobarCompra() => false;
 
-    private bool PuedeCerrar() => queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Resuelto")?.ID_Estado;
+    private bool PuedeCerrar() => false;
 
-    private bool PuedeReabrir() => queja?.ID_Estado == lstEstados.FirstOrDefault(e => e.NombreEstado == "Cerrado")?.ID_Estado;
+    private bool PuedeReabrir() => false;
 
     private async Task AbrirAsignar()
     {
@@ -295,6 +323,10 @@
     };
 
     private string GetNombreEstado(decimal id) => lstEstados.FirstOrDefault(e => e.ID_Estado == id)?.NombreEstado ?? "N/D";
+
+    private void ToggleOrdenHistorial() => ordenAscendente = !ordenAscendente;
+
+    private string GetEmpleadoNombre(decimal id) => empleadosHistorial.TryGetValue(id, out var nombre) ? nombre : "N/D";
 
     private string GetEstadoStyle(string estado) => estado switch
     {

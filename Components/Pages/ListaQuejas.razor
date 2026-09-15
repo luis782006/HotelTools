@@ -93,7 +93,9 @@
                             </MudTooltip>
                         </MudTd>
                         <MudTd DataLabel="Título">
-                            <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@context.Titulo</MudText>
+                            <MudTooltip Text="@context.Titulo" Placement="Placement.Top">
+                                <MudText Typo="Typo.body2" Style="color: #C1C1C4;">@(context.Titulo.Length > 30 ? context.Titulo.Substring(0, 30) + "..." : context.Titulo)</MudText>
+                            </MudTooltip>
                         </MudTd>
                         <MudTd DataLabel="Huésped">@context.HuespedNombre</MudTd>
                         <MudTd DataLabel="Habitación">@context.HabitacionNombre (@context.HabitacionNro)</MudTd>
@@ -157,7 +159,7 @@
         lstDeptos = await Context.Departamentos.AsNoTracking().OrderBy(d => d.NombreDepartamento).ToListAsync();
         lstHabitaciones = await Context.Habitaciones.AsNoTracking().OrderBy(h => h.DescripcionHab).ToListAsync();
 
-        var quejas = await Context.Quejas.AsNoTracking().ToListAsync();
+        var quejas = await Context.Quejas.AsNoTracking().OrderBy(q => q.ID_Quejas).ToListAsync();
         var huespedes = await Context.Huespedes.AsNoTracking().ToListAsync();
         var empleados = await Context.Empleados.AsNoTracking().ToListAsync();
         var habitaciones = await Context.Habitaciones.AsNoTracking().ToListAsync();

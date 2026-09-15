@@ -80,16 +80,14 @@
             var estadoActual = lstEstados.FirstOrDefault(e => e.ID_Estado == EstadoActualId);
             if (estadoActual != null)
             {
-                var transiciones = new Dictionary<string, string[]>
-                {
-                    ["Nuevo"] = new[] { "Asignado", "Rechazado" },
-                    ["Asignado"] = new[] { "En Proceso", "Rechazado" },
-                    ["En Proceso"] = new[] { "Pendiente Aprobación", "Resuelto", "Rechazado" },
-                    ["Pendiente Aprobación"] = new[] { "En Proceso", "Resuelto" },
-                    ["Resuelto"] = new[] { "Cerrado" },
-                    ["Cerrado"] = new[] { "En Proceso" },
-                    ["Rechazado"] = Array.Empty<string>()
-                };
+                    var transiciones = new Dictionary<string, string[]>
+                    {
+                        ["Nuevo"] = new[] { "Asignado" },
+                        ["Asignado"] = new[] { "En Proceso", "Resuelto", "Rechazado" },
+                        ["En Proceso"] = new[] { "Resuelto", "Rechazado" },
+                        ["Resuelto"] = Array.Empty<string>(),
+                        ["Rechazado"] = Array.Empty<string>()
+                    };
 
                 if (transiciones.TryGetValue(estadoActual.NombreEstado, out var siguientes))
                 {
