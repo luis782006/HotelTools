@@ -904,6 +904,16 @@ REFERENCES [Quejas].[Huespedes] ([ID_Huesped])
 GO
 ALTER TABLE [Quejas].[Quejas] CHECK CONSTRAINT [FK_Quejas_Huespedes]
 GO
+ALTER TABLE [Quejas].[Quejas]  WITH CHECK ADD  CONSTRAINT [FK_Quejas_Estados] FOREIGN KEY([ID_Estado])
+REFERENCES [Quejas].[Estados] ([ID_Estado])
+GO
+ALTER TABLE [Quejas].[Quejas] CHECK CONSTRAINT [FK_Quejas_Estados]
+GO
+ALTER TABLE [Quejas].[Quejas]  WITH CHECK ADD  CONSTRAINT [FK_Quejas_EmpleadosAsignacion] FOREIGN KEY([ID_EmpleadoAsignacion])
+REFERENCES [Empleados].[Empleados] ([ID_Empleado])
+GO
+ALTER TABLE [Quejas].[Quejas] CHECK CONSTRAINT [FK_Quejas_EmpleadosAsignacion]
+GO
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'Quien registro el movimiento del producto' , @level0type=N'SCHEMA',@level0name=N'Inventarios', @level1type=N'TABLE',@level1name=N'ProductosMovimientos', @level2type=N'COLUMN',@level2name=N'ID_Empleado'
 GO
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'Quien movio el producto' , @level0type=N'SCHEMA',@level0name=N'Inventarios', @level1type=N'TABLE',@level1name=N'ProductosMovimientos', @level2type=N'COLUMN',@level2name=N'ID_EmpleadoMov'
