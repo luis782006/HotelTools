@@ -224,12 +224,15 @@
                     .ToListAsync();
 
                 var empleadoIds = historial.Select(h => h.ID_Empleado).Distinct().ToList();
-                var empleados = await Context.Empleados
-                    .Where(e => empleadoIds.Contains(e.ID_Empleado))
-                    .ToListAsync();
-                empleadosHistorial = empleados.ToDictionary(
-                    e => e.ID_Empleado,
-                    e => $"{e.Nombre?.Trim()} {e.Apellido?.Trim()}");
+                if (empleadoIds.Any())
+                {
+                    var empleados = await Context.Empleados
+                        .Where(e => empleadoIds.Contains(e.ID_Empleado))
+                        .ToListAsync();
+                    empleadosHistorial = empleados.ToDictionary(
+                        e => e.ID_Empleado,
+                        e => $"{e.Nombre?.Trim()} {e.Apellido?.Trim()}");
+                }
 
                 var hab = await Context.Habitaciones.FindAsync(queja.ID_Habitaciones);
                 habitacionInfo = hab != null ? $"{hab.DescripcionHab} ({hab.ID_NroHab})" : "N/D";
