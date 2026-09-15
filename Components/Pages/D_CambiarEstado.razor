@@ -83,10 +83,11 @@
                     var transiciones = new Dictionary<string, string[]>
                     {
                         ["Nuevo"] = new[] { "Asignado" },
-                        ["Asignado"] = new[] { "En Proceso", "Resuelto", "Rechazado" },
-                        ["En Proceso"] = new[] { "Resuelto", "Rechazado" },
-                        ["Resuelto"] = Array.Empty<string>(),
-                        ["Rechazado"] = Array.Empty<string>()
+                        ["Asignado"] = new[] { "En Proceso", "Resuelto", "Rechazada" },
+                        ["En Proceso"] = new[] { "En Proceso", "Resuelto", "Rechazada" },
+                        ["Resuelto"] = new[] { "Cerrada" },
+                        ["Rechazada"] = Array.Empty<string>(),
+                        ["Cerrada"] = Array.Empty<string>()
                     };
 
                 if (transiciones.TryGetValue(estadoActual.NombreEstado, out var siguientes))
