@@ -872,6 +872,23 @@ namespace HotelTools.Migrations
                     b.Navigation("Habitacion");
                 });
 
+            modelBuilder.Entity("HotelTools.Models.Queja", b =>
+                {
+                    b.HasOne("HotelTools.Models.EstadoQueja", "Estado")
+                        .WithMany()
+                        .HasForeignKey("ID_Estado")
+                        .HasConstraintName("FK_Quejas_Estados");
+
+                    b.HasOne("HotelTools.Models.Empleado", "EmpleadoAsignado")
+                        .WithMany()
+                        .HasForeignKey("ID_EmpleadoAsignacion")
+                        .HasConstraintName("FK_Quejas_EmpleadosAsignacion");
+
+                    b.Navigation("EmpleadoAsignado");
+
+                    b.Navigation("Estado");
+                });
+
             modelBuilder.Entity("HotelTools.Models.PaqueteProductoDetalle", b =>
                 {
                     b.HasOne("HotelTools.Models.PaqueteProducto", "Paquete")

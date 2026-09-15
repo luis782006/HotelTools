@@ -249,6 +249,14 @@ namespace HotelTools.Models
                 entity.Property(e => e.ID_Quejas).ValueGeneratedOnAdd();
                 entity.Property(e => e.Quejas).HasColumnType("nvarchar(max)");
                 entity.ToTable("Quejas", "Quejas");
+                entity.HasOne(e => e.Estado).WithMany()
+                    .HasForeignKey(e => e.ID_Estado)
+                    .HasConstraintName("FK_Quejas_Estados")
+                    .OnDelete(DeleteBehavior.ClientSetNull);
+                entity.HasOne(e => e.EmpleadoAsignado).WithMany()
+                    .HasForeignKey(e => e.ID_EmpleadoAsignacion)
+                    .HasConstraintName("FK_Quejas_EmpleadosAsignacion")
+                    .OnDelete(DeleteBehavior.ClientSetNull);
             });
 
             modelBuilder.Entity<HistorialQueja>(entity =>

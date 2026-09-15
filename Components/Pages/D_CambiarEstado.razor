@@ -3,6 +3,7 @@
 @inject HotelContext Context
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject SeguridadSesion Sesion
 
 <MudDialog>
     <DialogContent>
@@ -112,7 +113,24 @@
                 var queja = await Context.Quejas.FindAsync(IDQueja);
                 if (queja != null)
                 {
+                    var estadoAsignado = lstEstados.FirstOrDefault(e => e.NombreEstado == "Asignado");
                     queja.ID_EmpleadoAsignacion = empleadoAsignado;
+                    if (estadoAsignado != null)
+                        queja.ID_Estado = estadoAsignado.ID_Estado;
+                    await Context.SaveChangesAsync();
+
+                    var hist = new HistorialQueja
+                    {
+                        ID_Quejas = IDQueja,
+                        ID_Empleado = Sesion.EmpleadoActual?.ID_Empleado ?? 1,
+                        ID_Estado = estadoAsignado?.ID_Estado ?? queja.ID_Estado ?? 0,
+                        observaciones = observaciones,
+                        ID_Compra = null,
+                        ID_Imagen = null,
+                        Aprobado = false,
+                        FechaRegistro = DateTime.Now
+                    };
+                    Context.HistorialQuejas.Add(hist);
                     await Context.SaveChangesAsync();
                     Snackbar.Add("Asignación guardada.", Severity.Success);
                 }
@@ -128,7 +146,7 @@
                     var hist = new HistorialQueja
                     {
                         ID_Quejas = IDQueja,
-                        ID_Empleado = 1,
+                        ID_Empleado = Sesion.EmpleadoActual?.ID_Empleado ?? 1,
                         ID_Estado = nuevoEstadoId,
                         observaciones = observaciones?.Length > 100 ? observaciones.Substring(0, 100) : observaciones,
                         ID_Compra = null,

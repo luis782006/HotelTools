@@ -17,5 +17,7 @@ namespace HotelTools.Models
         public decimal ID_Prioridad { get; set; }
         public decimal? ID_EmpleadoAsignacion { get; set; }
         public decimal? ID_Estado { get; set; }
+        public virtual EstadoQueja? Estado { get; set; }
+        public virtual Empleado? EmpleadoAsignado { get; set; }
     }
 }
