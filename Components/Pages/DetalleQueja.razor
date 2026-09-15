@@ -223,15 +223,15 @@
                     .Where(h => h.ID_Quejas == queja.ID_Quejas)
                     .ToListAsync();
 
-                var empleadoIds = historial.Select(h => h.ID_Empleado).Distinct().ToList();
-                if (empleadoIds.Any())
+                foreach (var h in historial)
                 {
-                    var empleados = await Context.Empleados
-                        .Where(e => empleadoIds.Contains(e.ID_Empleado))
-                        .ToListAsync();
-                    empleadosHistorial = empleados.ToDictionary(
-                        e => e.ID_Empleado,
-                        e => $"{e.Nombre?.Trim()} {e.Apellido?.Trim()}");
+                    if (!empleadosHistorial.ContainsKey(h.ID_Empleado))
+                    {
+                        var emp = await Context.Empleados.FindAsync(h.ID_Empleado);
+                        empleadosHistorial[h.ID_Empleado] = emp != null
+                            ? $"{emp.Nombre?.Trim()} {emp.Apellido?.Trim()}"
+                            : "N/D";
+                    }
                 }
 
                 var hab = await Context.Habitaciones.FindAsync(queja.ID_Habitaciones);
