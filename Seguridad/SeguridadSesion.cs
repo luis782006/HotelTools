@@ -36,8 +36,18 @@ namespace HotelTools.Seguridad
                 .Where(e => e.Nombre.Trim() == nombreUsuario.Trim())
                 .ToListAsync();
 
-            var empleado = candidatos.FirstOrDefault(u =>
-                PasswordHasher.VerifyPassword(password, u.Password, _configuration));
+            Empleado? empleado = null;
+            bool requiereMigracionHash = false;
+            foreach (var candidato in candidatos)
+            {
+                if (PasswordHasher.VerifyPassword(password, candidato.Password, _configuration,
+                        out bool verificadoConPepperAnterior))
+                {
+                    empleado = candidato;
+                    requiereMigracionHash = verificadoConPepperAnterior;
+                    break;
+                }
+            }
 
             if (empleado == null)
             {
@@ -56,6 +66,15 @@ namespace HotelTools.Seguridad
             {
                 LastError = "Rol no asignado.";
                 return false;
+            }
+
+            // Ventana de migración del pepper: el hash se re-hashea con el
+            // pepper vigente en el primer login exitoso con el pepper anterior.
+            if (requiereMigracionHash)
+            {
+                empleado.Password = PasswordHasher.HashPassword(password, _configuration);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Hash migrado a pepper nuevo para empleado {ID_Empleado}.", empleado.ID_Empleado);
             }
 
             // Límite de sesiones concurrentes: máximo 2 por empleado.

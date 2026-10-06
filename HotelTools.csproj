@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- El proyecto de tests vive dentro de este directorio: excluir su código del compilador principal -->
+    <Compile Remove="HotelTools.Tests\**" />
+    <Content Remove="HotelTools.Tests\**" />
+    <None Remove="HotelTools.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="EPPlus" Version="7.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.10" />

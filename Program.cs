@@ -33,6 +33,17 @@ var configuration = new ConfigurationBuilder()
 builder.Services.AddSingleton(configuration);
 //==============================================================
 
+// VALIDACION DE PEPPER (clave secreta para hashes de contraseñas).
+// Debe venir del entorno (Util__ClaveSecreta); si falta, la app NO arranca
+// para evitar operar con un pepper vacío o por defecto.
+var claveSecreta = configuration["Util:ClaveSecreta"];
+if (string.IsNullOrWhiteSpace(claveSecreta))
+{
+    throw new InvalidOperationException(
+        "Falta la variable de configuración 'Util:ClaveSecreta' (definir la variable de entorno 'Util__ClaveSecreta' antes de iniciar la aplicación).");
+}
+//===============================================================
+
 // CONFIGURACION DE LOGS
 Directory.CreateDirectory("Logs"); // CREO LA CARPETA SINO EXISTE
 
@@ -58,7 +69,13 @@ builder.Services.AddDbContext<HotelContext>(options =>
 //Autenticaci�n y Autorizaci�n
 builder.Services.AddAuthentication("HotelToolsAuth")
     .AddScheme<AuthenticationSchemeOptions, HotelToolsAuthHandler>("HotelToolsAuth", null);
-builder.Services.AddAuthorization();
+// Denegación por defecto: cualquier endpoint/página sin política propia exige sesión autenticada.
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthenticationStateProvider>());
 builder.Services.AddScoped<AuthServices>();
@@ -105,12 +122,13 @@ app.Use(async (context, next) =>
         return;
     }
 
-    var cookieName = configuration["Util:CookieName"];
-    var tieneCookie = context.Request.Cookies.TryGetValue(cookieName, out var token) && !string.IsNullOrEmpty(token);
+    // El token se valida contra la BD en HotelToolsAuthHandler (existe, activo y
+    // no expirado) antes de llegar aquí: una cookie forjada queda como anónima.
+    var autenticado = context.User.Identity?.IsAuthenticated == true;
 
     if (path == "/")
     {
-        if (tieneCookie && context.User.Identity?.IsAuthenticated == true)
+        if (autenticado)
         {
             context.Response.Redirect("/home");
             return;
@@ -125,7 +143,7 @@ app.Use(async (context, next) =>
         return;
     }
 
-    if (!tieneCookie)
+    if (!autenticado)
     {
         context.Response.Redirect("/login");
         return;

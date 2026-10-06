@@ -12,6 +12,7 @@
 
 # Secret configuration files (must not be committed)
 appsettings.json
+!appsettings.json
 appsettings.Development.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
