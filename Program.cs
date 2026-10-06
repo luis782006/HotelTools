@@ -76,6 +76,10 @@ builder.Services.AddAuthorization(options =>
         .RequireAuthenticatedUser()
         .Build();
 });
+// Reemplaza al handler por defecto (registro posterior = último gana): exime del
+// desafío los endpoints del circuito Blazor (/_blazor) y los assets públicos del
+// framework (/_framework, p. ej. blazor.web.js); el resto delega al handler por defecto.
+builder.Services.AddTransient<IAuthorizationMiddlewareResultHandler, BlazorCircuitResultHandler>();
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<CustomAuthenticationStateProvider>());
 builder.Services.AddScoped<AuthServices>();
